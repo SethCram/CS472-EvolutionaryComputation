@@ -1,2 +1,6 @@
 #ignore virt envs
 /EvoComp
+
+#ignore python cache
+**/__pycache__
+EightQueensProject/__pycache__/EightQueensFuncts.cpython-310.pyc
