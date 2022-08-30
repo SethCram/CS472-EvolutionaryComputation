@@ -1,3 +1,4 @@
+import math
 from multiprocessing.dummy import Array
 from typing import Tuple
 import numpy
@@ -14,7 +15,30 @@ Create visuals of the data and write a short paper detailing your EA and results
 Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
 """
 def EvalFitness( queen_positions: Array[Tuple()]) -> int:
-    return 5
+    
+    collisions = 0
+    
+    numOfQueens = len( queen_positions )
+    
+    #walk thru every queen on board
+    for i in range(0, numOfQueens):
+        
+        #for every queen on board, compare it to every other queen on the board
+        for j in range(0, numOfQueens):
+            
+            #if not comparing the same queen (queens cant occupy the same space)
+            if( i != j ):
+                #find the slope tween the two queens
+                changeInX, changeInY = numOfQueens[i] - numOfQueens[j]
+                slope = abs( changeInY/changeInX )
+                
+                #if horizontal, vertical, or diagonal collision tween Queens bc of slope
+                if( slope in [0, 0.5, 1]):
+                    collisions += collisions
+                
+    return collisions
+
+
 
 """
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
