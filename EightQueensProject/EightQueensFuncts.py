@@ -6,7 +6,8 @@ import numpy
 def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_y: int) -> numpy.array:
     """
     Creates an individual with random traits.
-    eight queens prob traits = queens' positions
+    Eight queens prob traits = queens' positions.
+    Created queens can occupy already occupied spaces.
     """
     
     #init arr w/ None
@@ -16,12 +17,25 @@ def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_
     for traitIndex in range(0, number_of_traits):
         #fill that individual's trait using random x and y coords
         individual[traitIndex] = (randbelow(board_size_x), randbelow(board_size_y))
-    
+        
+        """
+        #need to verify that created position is unique and doesn't occupy another Queen's space
+        
+        #if not first trait
+        if( traitIndex != 0):
+            #walk thru all already created traits
+            for checkIndex in range(0, traitIndex):
+                #if another queen shared the same spot
+                if( individual[traitIndex][0] == individual[checkIndex][0] and individual[traitIndex][1] == individual[checkIndex][1] ):
+                    #fill that individual's trait using random x and y coords
+                    individual[traitIndex] = (randbelow(board_size_x), randbelow(board_size_y))
+        """
+        
     return individual
 
 def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: int, board_size_y: int) -> None:
     """
-    Create population of the desired size with random individuals.
+    Create population with random individuals using the given params.
     """
     
     #init pop
@@ -30,8 +44,6 @@ def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: 
     #populate every member of population
     for individualIndex in range(0, population_size):
         population[individualIndex] = CreateRandomIndividual(number_of_traits, board_size_x, board_size_y)
-        
-        #need to verify that created individual is unique and doesn't occupy another Queen's space
     
     return population
 
@@ -54,11 +66,20 @@ def EvalFitness( queen_positions: numpy.array) -> int:
             if( i != j ):
                 #find the slope tween the two queens
                 changeInX, changeInY = (queen_positions[i][0] - queen_positions[j][0], queen_positions[i][1] - queen_positions[j][1])
-                slope = abs( changeInY/changeInX )
                 
-                #if horizontal, vertical, or diagonal collision tween Queens bc of slope
-                if( slope in [0, 0.5, 1]):
-                    collisions += collisions
+                #if 2 queens occupying same spot:
+                if(changeInX == 0 or changeInY == 0):
+                    collisions += 1
+                #if 2 queens not on same spot
+                else:
+                    slope = abs( changeInY/changeInX )
+                    
+                    #if horizontal, vertical, or diagonal collision tween Queens bc of slope
+                    if( slope in [0, 0.5, 1]):
+                        collisions += 1
+    
+    #ensure num of collisions isn't above the max
+    assert collisions <= numOfQueens * numOfQueens
                 
     return collisions
 
