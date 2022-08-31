@@ -156,11 +156,14 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
     #init child arrs
     child1 = numpy.array( [None] *  num_of_traits )
     child2 = numpy.array( [None] *  num_of_traits )
+    children = numpy.array( [None] *  2 )
     
     #walk thru traits of parents
     for i in range(0, num_of_traits):
-        #if rand greater than or 0.5
-        if( random() >= 0.5 ):
+        
+        #roll the dice 50/50 on what child gets what parent's trait
+        
+        if( random.randint(0,1) == 1 ):
             #copy matching child to parent trait
             child1[i] = parent1[i]
             child2[i] = parent2[i]
@@ -168,9 +171,12 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
             #copy non-matching child to parent trait
             child1[i] = parent2[i]
             child2[i] = parent1[i]
+            
+    children[0] = child1
+    children[1] = child2
     
     #return children
-    return numpy.array[child1, child2]
+    return children
 
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.

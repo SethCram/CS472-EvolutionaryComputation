@@ -73,4 +73,4 @@ children = CrossoverBreed(parents[0], parents[1])
 for child in children:
     Mutate(child)
     
-SurvivalReplacement(population, child)
+SurvivalReplacement(population, children)
