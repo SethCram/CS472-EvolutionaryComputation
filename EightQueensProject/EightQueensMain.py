@@ -27,25 +27,41 @@ class PopulationFitness:
     individual: numpy.array
     fitness: int
     
-populationFitness = numpy.array( [None] * POPULATION_SIZE)
+#populationFitness = numpy.array( [None] * POPULATION_SIZE)
 
-populationFitnessHistory = numpy.array([None] * (POPULATION_SIZE + (EVOLVE_ITERATIONS * CHILDREN_PER_ITERATION) ) )
-popFitHistoryIndex = 0
+#populationFitness = numpy.array([None] * (POPULATION_SIZE + (EVOLVE_ITERATIONS * CHILDREN_PER_ITERATION) ) )
+populationFitness = [None] * POPULATION_SIZE
+#popFitHistoryIndex = 0
 
 population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
 #print(population)
 
 #walk thru each individual in pop
 for i in range(0, POPULATION_SIZE):
-    #eval fitness of each individual and store it
-    populationFitness[i] = EvalFitness(population[i])
+    #store individual w/ their fitness data
+    populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
     
-    #store pop + fitness data
-    populationFitnessHistory[popFitHistoryIndex] = PopulationFitness( population[i], populationFitness[i] )
-    popFitHistoryIndex += 1
-    
-#print(populationFitnessHistory)
+print(populationFitness)
 
-worstFitness = max( populationFitness )
-bestFitness = min( populationFitness )
-avgFitness = mean ( populationFitness  ) #currently a float, should be an int?
+def getFitness( individual: PopulationFitness ) -> int:
+    return individual.fitness
+
+#sort in descending order by fitness (high/bad to low/good)
+populationFitness.sort(key=getFitness, reverse=True)
+
+#copy sorted pop fitness data to reorder pop
+for i in range(0, POPULATION_SIZE):
+    population[i] = populationFitness[i].individual
+
+worstFitnessData = max( populationFitness, key=getFitness )
+bestFitnessData = min( populationFitness, key=getFitness )
+#avgFitnessData = mean ( populationFitness) #currently a float, should be an int?
+
+#find avg
+fitnessSum = 0
+for i in range(0, POPULATION_SIZE):
+    fitnessSum += populationFitness[i].fitness
+avgFitness = fitnessSum/POPULATION_SIZE
+
+#breed 2 parents in pop
+children = BreedSelection(population)

@@ -1,7 +1,7 @@
-#from multiprocessing.dummy import Array
 from secrets import randbelow
-#from typing import Tuple
 import numpy
+from numpy.random import default_rng
+from scipy.stats import halfnorm
 
 def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_y: int) -> numpy.array:
     """
@@ -88,6 +88,17 @@ Create a selection function which will select two parents from the population, t
 """
 #def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
 def BreedSelection( population: numpy.array ) -> numpy.array:
+    #create rng generator
+    rng = default_rng()
+    #take a random # using Gaussian distr
+    vals = rng.standard_normal(10)
+    
+    #assumes population array is in ascending fitness order
+    
+    
+    
+    parent1Fitness = halfnorm.rvs(scale=10)
+    
     return numpy.array[0, 1]
 
 """
