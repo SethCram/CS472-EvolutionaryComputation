@@ -1,7 +1,11 @@
+import random
 from secrets import randbelow
 import numpy
-from numpy.random import default_rng
-from scipy.stats import halfnorm
+from scipy.stats import truncnorm
+import scipy.stats as ss
+import matplotlib.pyplot as plt
+
+#region Creation Methods
 
 def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_y: int) -> numpy.array:
     """
@@ -47,11 +51,15 @@ def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: 
     
     return population
 
+#endregion Creation Methods
+
 """
 Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
 """
 def EvalFitness( queen_positions: numpy.array) -> int:
-    
+    """
+    Evaluates fitness of a single individual.
+    """
     collisions = 0
     
     numOfQueens = len( queen_positions )
@@ -88,25 +96,81 @@ Create a selection function which will select two parents from the population, t
 """
 #def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
 def BreedSelection( population: numpy.array ) -> numpy.array:
-    #create rng generator
-    rng = default_rng()
-    #take a random # using Gaussian distr
-    vals = rng.standard_normal(10)
+    """
+    Assumes population array is sorted in ascending fitness order (low/good to high/bad).
+    Returns an array of two parents.
+    """
+    #store pop size
+    pop_size = len(population)
     
-    #assumes population array is in ascending fitness order
+    #use a normal distr to choose 2 parents (inclusive)
+    #parent1Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=1).rvs(size=1000).round().astype(int)
+    #parent2Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=1).rvs(size=1000).round().astype(int)
     
+    #generate a rando normal distr of ints
+    x = numpy.arange(-pop_size, pop_size+1)
+    xU, xL = x + 0.5, x - 0.5 
+    prob = ss.norm.cdf(xU, scale = 30) - ss.norm.cdf(xL, scale = 30) #scale represents inner quartiles
+    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
+    nums = abs(numpy.random.choice(x, size = 1000000, p = prob))
+    plt.hist(nums, bins = len(x))
+    plt.show()
     
+    #choose parent indices, make sure they're ints and positive
+    parent1Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
+    parent2Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
     
-    parent1Fitness = halfnorm.rvs(scale=10)
+    #make sure indices within array range
+    assert parent1Index < pop_size and parent2Index < pop_size and type(parent1Index) == int and type(parent2Index) == int
     
-    return numpy.array[0, 1]
+    #if parents are the same
+    while( parent2Index == parent1Index):
+        #refind parent 2
+        parent2Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
+        
+    population[0]
+    
+    parent1 = population[parent1Index]
+    parent2 = population[parent2Index]
+    
+    parentsArray = numpy.array( [None] * 2)
+    parentsArray[0] = parent1
+    parentsArray[1] = parent2
+        
+    #return chosen parents
+    return parentsArray
+    #return numpy.array[parent1Index, parent2Index]
 
 """
 Create a crossover function, which will accept two individuals (parents), and create two children, which should inherit from the parents.
 """
 #def CrossoverBreed( parent1: numpy.array[tuple()], parent2: numpy.array[tuple()] ) -> tuple( numpy.array[tuple()], numpy.array[tuple()] ): #change input and ret type to Array of Array of tuples for scalability?
 def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
-    return numpy.array[numpy.array[tuple(0,1)], numpy.array[tuple(0,1)]]
+    """
+    Assumes both parents have the same number of traits (queens).
+    Randomly assign queen positions from each parent, regardless of fitness.
+    """
+    
+    num_of_traits = len(parent1)
+    
+    #init child arrs
+    child1 = numpy.array( [None] *  num_of_traits )
+    child2 = numpy.array( [None] *  num_of_traits )
+    
+    #walk thru traits of parents
+    for i in range(0, num_of_traits):
+        #if rand greater than or 0.5
+        if( random() >= 0.5 ):
+            #copy matching child to parent trait
+            child1[i] = parent1[i]
+            child2[i] = parent2[i]
+        else:
+            #copy non-matching child to parent trait
+            child1[i] = parent2[i]
+            child2[i] = parent1[i]
+    
+    #return children
+    return numpy.array[child1, child2]
 
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.
@@ -121,7 +185,20 @@ Create a survival function which removes the two worst individuals from the popu
 """
 #def SurvivalReplacement( population: numpy.array, children: tuple( numpy.array, numpy.array) ) -> None: #change children input to array of array tuples for scalability?
 def SurvivalReplacement( population: numpy.array, children: numpy.array ) -> None:
-    #can replace elements in an array, don't needa return anything
+    """
+    Assumes population array is sorted in ascending fitness order (low/good to high/bad).
+
+    Args:
+        population (numpy.array): _description_
+        children (numpy.array): _description_
+    """
+    #cache lengths of pop and children
+    population_size = len(population)
+    numOfChildren = len(children)
+    
+    #replace end of pop (best fit/worst off) w/ children
+    population[population_size-numOfChildren-1:population_size-1] = children
+    
     return
 
 #queen_positions = numpy.arange()

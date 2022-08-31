@@ -40,14 +40,14 @@ population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, B
 for i in range(0, POPULATION_SIZE):
     #store individual w/ their fitness data
     populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
-    
-print(populationFitness)
 
 def getFitness( individual: PopulationFitness ) -> int:
     return individual.fitness
 
-#sort in descending order by fitness (high/bad to low/good)
-populationFitness.sort(key=getFitness, reverse=True)
+#sort in ascending order by fitness (low/good to high/bad)
+populationFitness.sort(key=getFitness)
+
+print(populationFitness)
 
 #copy sorted pop fitness data to reorder pop
 for i in range(0, POPULATION_SIZE):
@@ -63,5 +63,14 @@ for i in range(0, POPULATION_SIZE):
     fitnessSum += populationFitness[i].fitness
 avgFitness = fitnessSum/POPULATION_SIZE
 
-#breed 2 parents in pop
-children = BreedSelection(population)
+#select 2 parents from pop
+parents = BreedSelection(population)
+
+#crossover breed parents to get children
+children = CrossoverBreed(parents[0], parents[1])
+
+#create mutated children
+for child in children:
+    Mutate(child)
+    
+SurvivalReplacement(population, child)
