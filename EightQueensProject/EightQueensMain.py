@@ -34,11 +34,14 @@ for j in range(0, EVOLVE_ITERATIONS ):
     for i in range(0, POPULATION_SIZE):
         #store individual w/ their fitness data
         populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
+       
+    #print pop-fitness before sorting
+    print(populationFitness)
 
     #sort in ascending order by fitness (low/good to high/bad)
     populationFitness.sort(key=getFitness)
 
-    print(populationFitness)
+    #print(populationFitness)
 
     #copy sorted pop fitness data to reorder pop
     for i in range(0, POPULATION_SIZE):

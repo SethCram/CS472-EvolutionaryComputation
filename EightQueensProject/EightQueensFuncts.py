@@ -128,7 +128,7 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
     #parent2Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=1).rvs(size=1000).round().astype(int)
     
     #generate a rando normal distr of ints
-    x = numpy.arange(-pop_size, pop_size+1)
+    x = numpy.arange(-pop_size+1, pop_size) #bc upper bound is exclusive
     xU, xL = x + 0.5, x - 0.5 
     prob = ss.norm.cdf(xU, scale = 30) - ss.norm.cdf(xL, scale = 30) #scale represents inner quartiles
     prob = prob / prob.sum() # normalize the probabilities so their sum is 1
@@ -280,9 +280,9 @@ def SurvivalReplacement( population: numpy.array, children: numpy.array ) -> Non
     #cache lengths of pop and children
     population_size = len(population)
     numOfChildren = len(children)
-    
+
     #replace end of pop (best fit/worst off) w/ children
-    population[population_size-numOfChildren-1:population_size-1] = children
+    population[population_size-numOfChildren:population_size] = children #array slicing is exclusive on upper bound
     
     return
 
