@@ -123,10 +123,71 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
     #store pop size
     pop_size = len(population)
     
-    #use a normal distr to choose 2 parents (inclusive)
-    #parent1Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=1).rvs(size=1000).round().astype(int)
-    #parent2Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=1).rvs(size=1000).round().astype(int)
+    """
+    Approach 5: tried using half norm and incr'd to take interval 1-100 then subtr 1 after.
+    """
     
+    #take interval 1-100
+    x = numpy.arange(1, pop_size+1) #bc upper bound is exclusive
+    #store every number's +/-0.5
+    xU, xL = x + 0.5, x - 0.5 
+    #determine probability
+    prob = ss.halfnorm.cdf(xU, scale = 30) - ss.halfnorm.cdf(xL, scale = 30) #scale represents inner quartiles
+    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
+    #decr by 1 to find the index
+    xIndexRange = x - 1
+    
+    #if overloaded to display distr graph
+    if( displayDistributionGraph):
+        #take randos using the calc'd prob and index range
+        nums = numpy.random.choice(xIndexRange, size = 1000000, p = prob)
+        #display distr histogram
+        plt.hist(nums, bins = pop_size)
+        plt.show()
+        
+    #choose parent indices, make sure only take int part of ret'd data
+    parent1Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
+    parent2Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
+    
+    """Approach 4: use half norm to take half of the normal funct (every other val is half prob + goes over 100)
+    parent1Index = ss.halfnorm( loc=0,scale=30).rvs(size=100000).round().astype(int)
+    
+    #if overloaded to display distr graph
+    if( displayDistributionGraph):
+        #display distr graph
+        #nums = numpy.random.choice(x, size = 1000000, p = prob)
+        plt.hist(parent1Index, bins = pop_size)
+        plt.show()
+    """
+    
+    """Approach 3: use straightup truncnorm, conv to int, and graph it (every other val is half prob)
+    #use a normal distr to choose 2 parents (inclusive)
+    parent1Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=30).rvs(size=100000).round().astype(int)
+    parent2Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=30).rvs(size=100000).round().astype(int)
+    
+    #if overloaded to display distr graph
+    if( displayDistributionGraph):
+        #display distr graph
+        #nums = numpy.random.choice(x, size = 1000000, p = prob)
+        plt.hist(parent1Index, bins = pop_size)
+        plt.show()
+    """
+    
+    """Approach 2: use truncnorm in place of norm for approach 1. (bad at zero)
+    x = numpy.arange(0, pop_size) #bc upper bound is exclusive
+    xU, xL = x + 0.5, x - 0.5
+    prob = ss.truncnorm.cdf(xU, a=0, b=pop_size-1, scale = 30) - ss.truncnorm.cdf(xL, 0, pop_size-1, scale = 30) #scale represents inner quartiles
+    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
+    
+    #if overloaded to display distr graph
+    if( displayDistributionGraph):
+        #display distr graph
+        nums = numpy.random.choice(x, size = 1000000, p = prob)
+        plt.hist(nums, bins = pop_size)
+        plt.show()
+    """
+    
+    """Approach 1: Turn normal distr into half norm using abs value and int conversion (bad at zero)
     #generate a rando normal distr of ints
     x = numpy.arange(-pop_size+1, pop_size) #bc upper bound is exclusive
     xU, xL = x + 0.5, x - 0.5 
@@ -140,30 +201,30 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
         plt.hist(nums, bins = len(x))
         plt.show()
     
+    
     #choose parent indices, make sure they're ints and positive
     parent1Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
     parent2Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
+    """
     
     #make sure indices within array range
     assert parent1Index < pop_size and parent2Index < pop_size and type(parent1Index) == int and type(parent2Index) == int
     
-    #if parents are the same
+    #while parents are the same
     while( parent2Index == parent1Index):
         #refind parent 2
-        parent2Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
-        
-    population[0]
+        parent2Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
     
+    #get parents using indices
     parent1 = population[parent1Index]
     parent2 = population[parent2Index]
-    
+    #store parents in an array
     parentsArray = numpy.array( [None] * 2)
     parentsArray[0] = parent1
     parentsArray[1] = parent2
         
     #return chosen parents
     return parentsArray
-    #return numpy.array[parent1Index, parent2Index]
 
 """
 Create a crossover function, which will accept two individuals (parents), and create two children, which should inherit from the parents.
