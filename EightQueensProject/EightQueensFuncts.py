@@ -4,8 +4,9 @@ import numpy
 from scipy.stats import truncnorm
 import scipy.stats as ss
 import matplotlib.pyplot as plt
+from dataclasses import dataclass
 
-#region Creation Methods
+#region Creation Functs
 
 def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_y: int) -> numpy.array:
     """
@@ -53,6 +54,8 @@ def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: 
 
 #endregion Creation Methods
 
+#region Fitness Functs and Class
+
 """
 Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
 """
@@ -91,15 +94,32 @@ def EvalFitness( queen_positions: numpy.array) -> int:
                 
     return collisions
 
+@dataclass 
+class PopulationFitness:
+    """
+    Class to keep track of all individuals and their fitness.
+    """
+    individual: numpy.array
+    fitness: int
+
+def getFitness( individual: PopulationFitness ) -> int:
+        return individual.fitness
+    
+#endregion Fitness Functs and Class
+
+#region Breeding Functs
+
 """
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
 """
 #def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
-def BreedSelection( population: numpy.array ) -> numpy.array:
+def BreedSelection( population: numpy.array, displayDistributionGraph = False ) -> numpy.array(numpy.array(tuple)):
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.
+    If displayDistributionGraph is True, random distr shown using random sample data.
     """
+    
     #store pop size
     pop_size = len(population)
     
@@ -112,9 +132,13 @@ def BreedSelection( population: numpy.array ) -> numpy.array:
     xU, xL = x + 0.5, x - 0.5 
     prob = ss.norm.cdf(xU, scale = 30) - ss.norm.cdf(xL, scale = 30) #scale represents inner quartiles
     prob = prob / prob.sum() # normalize the probabilities so their sum is 1
-    nums = abs(numpy.random.choice(x, size = 1000000, p = prob))
-    plt.hist(nums, bins = len(x))
-    plt.show()
+    
+    #if overloaded to display distr graph
+    if( displayDistributionGraph):
+        #display distr graph
+        nums = abs(numpy.random.choice(x, size = 1000000, p = prob))
+        plt.hist(nums, bins = len(x))
+        plt.show()
     
     #choose parent indices, make sure they're ints and positive
     parent1Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
@@ -176,18 +200,20 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
             
     children[0] = child1
     children[1] = child2
-    
-    #return children
+
     return children
+
+#endregion Breeding Functs
 
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
 #def Mutate( child: numpy.array ) -> numpy.array:
-def Mutate( child: numpy.array ) -> bool:
+def PossiblyMutate( child: numpy.array ) -> bool:
     """
     Not a guaranteed mutation. Mutation will occur in only 20% of children passed to this function.
-    Returns false if Mutation failed.
+    Returns true if mutation done succeeded or no mutation.
+    Returns false if mutation supposed to be applied but failed.
     """
     randOneToTen = random.randint(1,10)
     randOneToTwo = random.randint(1,2)

@@ -1,6 +1,4 @@
 #import all functs from 8 queens functs
-from dataclasses import dataclass
-from statistics import mean
 from EightQueensFuncts import *
 import matplotlib.pyplot as plt
 import numpy
@@ -12,72 +10,66 @@ Create visuals of the data and write a short paper detailing your EA and results
 
 """
 
+#init unchanging constants
 POPULATION_SIZE = 100
 NUMBER_OF_TRAITS = 8
 BOARD_SIZE_X = 8
 BOARD_SIZE_Y = 8
 EVOLVE_ITERATIONS = 1000
 CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
-
-@dataclass 
-class PopulationFitness:
-    """
-    Class to keep track of all individuals and their fitness (even if individual's die).
-    """
-    individual: numpy.array
-    fitness: int
     
-#populationFitness = numpy.array( [None] * POPULATION_SIZE)
-
-#populationFitness = numpy.array([None] * (POPULATION_SIZE + (EVOLVE_ITERATIONS * CHILDREN_PER_ITERATION) ) )
+#init space for arrays
 populationFitness = [None] * POPULATION_SIZE
-#popFitHistoryIndex = 0
+worstFitnessData = [None] * EVOLVE_ITERATIONS
+bestFitnessData = [None] * EVOLVE_ITERATIONS
+avgFitnessData = [None] * EVOLVE_ITERATIONS
 
 population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
-#print(population)
 
 #run for desired evolution iterations
 for j in range(0, EVOLVE_ITERATIONS ):
     pass
 
-#walk thru each individual in pop
-for i in range(0, POPULATION_SIZE):
-    #store individual w/ their fitness data
-    populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
+    #walk thru each individual in pop
+    for i in range(0, POPULATION_SIZE):
+        #store individual w/ their fitness data
+        populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
 
-def getFitness( individual: PopulationFitness ) -> int:
-    return individual.fitness
+    #sort in ascending order by fitness (low/good to high/bad)
+    populationFitness.sort(key=getFitness)
 
-#sort in ascending order by fitness (low/good to high/bad)
-populationFitness.sort(key=getFitness)
+    print(populationFitness)
 
-print(populationFitness)
+    #copy sorted pop fitness data to reorder pop
+    for i in range(0, POPULATION_SIZE):
+        population[i] = populationFitness[i].individual
 
-#copy sorted pop fitness data to reorder pop
-for i in range(0, POPULATION_SIZE):
-    population[i] = populationFitness[i].individual
+    worstFitnessData[j] = max( populationFitness, key=getFitness )
+    bestFitnessData[j] = min( populationFitness, key=getFitness )
 
-worstFitnessData = max( populationFitness, key=getFitness )
-bestFitnessData = min( populationFitness, key=getFitness )
-#avgFitnessData = mean ( populationFitness) #currently a float, should be an int?
+    #find avg
+    fitnessSum = 0
+    for i in range(0, POPULATION_SIZE):
+        fitnessSum += populationFitness[i].fitness
+    avgFitnessData[j] = fitnessSum/POPULATION_SIZE
 
-#find avg
-fitnessSum = 0
-for i in range(0, POPULATION_SIZE):
-    fitnessSum += populationFitness[i].fitness
-avgFitness = fitnessSum/POPULATION_SIZE
+    #if first iteration 
+    if( j == 0 ):
+        #select 2 parents from pop + show distr graph
+        parents = BreedSelection(population, displayDistributionGraph=True)
+    else:
+        #select 2 parents from pop
+        parents = BreedSelection(population)
 
-#select 2 parents from pop
-parents = BreedSelection(population)
+    #crossover breed parents to get children
+    children = CrossoverBreed(parents[0], parents[1])
 
-#crossover breed parents to get children
-children = CrossoverBreed(parents[0], parents[1])
-
-#create mutated children
-for child in children:
-    #keep mutating child till successful
-    while(  Mutate(child) == False ): 
-        #do nothing
-        pass
+    #create possibly mutated children
+    for child in children:
+        #keep mutating child till successful
+        while(  PossiblyMutate(child) == False ): 
+            #do nothing
+            pass
+        
+    SurvivalReplacement(population, children)
     
-SurvivalReplacement(population, children)
