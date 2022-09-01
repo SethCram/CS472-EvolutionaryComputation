@@ -12,7 +12,7 @@ def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_
     """
     Creates an individual with random traits.
     Eight queens prob traits = queens' positions.
-    Created queens can occupy already occupied spaces.
+    Created queens can't occupy already occupied spaces.
     """
     
     #init arr w/ None
@@ -20,21 +20,30 @@ def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_
     
     #walk thru each trait of individual
     for traitIndex in range(0, number_of_traits):
-        #fill that individual's trait using random x and y coords
-        individual[traitIndex] = (randbelow(board_size_x), randbelow(board_size_y))
+        #find new trait using random coords within bounds
+        newTrait = (randbelow(board_size_x), randbelow(board_size_y))
+    
+        #verify that created position is unique and doesn't occupy another Queen's space
         
-        """
-        #need to verify that created position is unique and doesn't occupy another Queen's space
+        checkIndex = 0
         
         #if not first trait
         if( traitIndex != 0):
             #walk thru all already created traits
-            for checkIndex in range(0, traitIndex):
-                #if another queen shared the same spot
-                if( individual[traitIndex][0] == individual[checkIndex][0] and individual[traitIndex][1] == individual[checkIndex][1] ):
+            while( checkIndex < traitIndex):
+                #if another queen shares the same spot
+                if( newTrait[0] == individual[checkIndex][0] and newTrait[1] == individual[checkIndex][1] ):
                     #fill that individual's trait using random x and y coords
-                    individual[traitIndex] = (randbelow(board_size_x), randbelow(board_size_y))
-        """
+                    newTrait = (randbelow(board_size_x), randbelow(board_size_y))
+                    #restart duplicate check
+                    checkIndex = 0
+                #if another queen doesn't share same spot
+                else:
+                    #move onto next queen
+                    checkIndex += 1
+        
+        #fill that individual's trait
+        individual[traitIndex] = newTrait
         
     return individual
 
@@ -134,7 +143,7 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
     #determine probability
     prob = ss.halfnorm.cdf(xU, scale = 30) - ss.halfnorm.cdf(xL, scale = 30) #scale represents inner quartiles
     prob = prob / prob.sum() # normalize the probabilities so their sum is 1
-    #decr by 1 to find the index
+    #decr by 1 to find the index 0-99
     xIndexRange = x - 1
     
     #if overloaded to display distr graph
@@ -270,23 +279,30 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
 #def Mutate( child: numpy.array ) -> numpy.array:
-def PossiblyMutate( child: numpy.array ) -> bool:
+def Mutate( child: numpy.array ) -> bool:
     """
     Not a guaranteed mutation. Mutation will occur in only 20% of children passed to this function.
-    Returns true if mutation done succeeded or no mutation.
-    Returns false if mutation supposed to be applied but failed.
+    Returns true if mutation done.
+    Returns false if mutation not done.
     """
     randOneToTen = random.randint(1,10)
-    randOneToTwo = random.randint(1,2)
+    #randOneToTwo = random.randint(1,2)
     
     traitBeingMutated = random.randint(0, len(child)-1)
     childTraitBeingMutated = child[traitBeingMutated]
     
     board_size_x = 8
     board_size_y = 8
+    number_of_traits = 8
     
     #mutate around 20% of children
     if( randOneToTen <= 2 ):
+        """
+        #init new coords w/ old vals (one will be overwritten)
+        newX = childTraitBeingMutated[0]
+        newY = childTraitBeingMutated[1]
+        
+        
         # 50/50 roll on whether change x or y
         if( randOneToTen == 1):
             # 50/50 roll on whether subtr or add
@@ -302,7 +318,7 @@ def PossiblyMutate( child: numpy.array ) -> bool:
                 return False
             
             #apply new x
-            child[traitBeingMutated] = ( newX, childTraitBeingMutated[1] )
+            #child[traitBeingMutated] = ( newX, childTraitBeingMutated[1] )
         else:
             # 50/50 roll on whether subtr or add
             if( randOneToTwo == 1):
@@ -317,14 +333,73 @@ def PossiblyMutate( child: numpy.array ) -> bool:
                 return False
             
             #apply new y
-            child[traitBeingMutated] = ( childTraitBeingMutated[0], newY )
-    
-    return True
-            
-            
+            #child[traitBeingMutated] = ( childTraitBeingMutated[0], newY )
+        """
         
-    #numpy.array[tuple(0,1)]
-    return
+        #get mutated coords
+        newX, newY = GetMutatedCoords(childTraitBeingMutated)            
+        checkIndex = 0
+        
+        #remutate if new coords not unique on board or out of bounds
+            
+        #walk thru all traits
+        while( checkIndex < number_of_traits):
+            #if another queen shares the same spot, or new Y or X coord out of bounds
+            if( 
+               (checkIndex != traitBeingMutated and newX == child[checkIndex][0] and newY == child[checkIndex][1])
+               or (newY < 0 or newY > board_size_y - 1)
+               or (newX < 0 or newX > board_size_x - 1) 
+               ):
+                #remutate and check again for valid mutation
+                newX, newY = GetMutatedCoords(childTraitBeingMutated)
+                checkIndex = 0
+            #if another queen doesn't share same spot + new coords in bounds
+            else:
+                #move onto next queen
+                checkIndex += 1
+                
+        #apply new trait
+        child[traitBeingMutated] = (newX, newY)
+        #ret true bc mutated
+        return True
+    
+    #return false bc didn't mutate
+    return False      
+
+def GetMutatedCoords( childTraitBeingMutated: tuple ) -> tuple:
+    """
+    Get the mutated coordinates based off of the passed in trait +/- one of its x,y positions.
+    """
+    
+    randOneToTwoChangeXY = random.randint(1,2)
+    randOneToTwoChangePlusMinus = random.randint(1,2)
+    
+    oldX = childTraitBeingMutated[0]
+    oldY = childTraitBeingMutated[1]
+    
+    # 50/50 roll on whether change x or y
+    if( randOneToTwoChangeXY == 1):
+        # 50/50 roll on whether subtr or add
+        if( randOneToTwoChangePlusMinus == 1):
+            #add one
+            newX = oldX + 1
+        else:
+            #subtr one
+            newX = oldX - 1
+        
+        #return new coords
+        return (newX, oldY)
+    else:
+        # 50/50 roll on whether subtr or add
+        if( randOneToTwoChangePlusMinus == 1):
+            #add one
+            newY = oldY + 1
+        else:
+            #subtr one
+            newY = oldY - 1
+            
+        #return new coords
+        return (oldX, newY)
 
 """
 Create a survival function which removes the two worst individuals from the population, and then puts the new children into the population.

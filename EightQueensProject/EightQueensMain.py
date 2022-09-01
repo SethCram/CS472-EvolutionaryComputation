@@ -19,10 +19,18 @@ EVOLVE_ITERATIONS = 1000
 CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
     
 #init space for arrays
+
 populationFitness = [None] * POPULATION_SIZE
 worstFitnessData = [None] * EVOLVE_ITERATIONS
 bestFitnessData = [None] * EVOLVE_ITERATIONS
 avgFitnessData = [None] * EVOLVE_ITERATIONS
+
+"""throws a type error for some reason
+populationFitness = numpy.empty( POPULATION_SIZE )
+worstFitnessData = numpy.empty( EVOLVE_ITERATIONS )
+bestFitnessData = numpy.empty( EVOLVE_ITERATIONS )
+avgFitnessData = numpy.empty( EVOLVE_ITERATIONS )
+"""
 
 population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
 
@@ -69,10 +77,7 @@ for j in range(0, EVOLVE_ITERATIONS ):
 
     #create possibly mutated children
     for child in children:
-        #keep mutating child till successful
-        while(  PossiblyMutate(child) == False ): 
-            #do nothing
-            pass
+        #mutate child 
+        Mutate(child)
         
     SurvivalReplacement(population, children)
-    
