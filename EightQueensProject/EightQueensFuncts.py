@@ -163,6 +163,8 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
         
         #roll the dice 50/50 on what child gets what parent's trait
         
+        #if want waitings based on fitness of certain traits, need to attach a fitness score to each trait/Queen
+        
         if( random.randint(0,1) == 1 ):
             #copy matching child to parent trait
             child1[i] = parent1[i]
@@ -182,7 +184,58 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
 #def Mutate( child: numpy.array ) -> numpy.array:
-def Mutate( child: numpy.array ) -> None:
+def Mutate( child: numpy.array ) -> bool:
+    """
+    Not a guaranteed mutation. Mutation will occur in only 20% of children passed to this function.
+    Returns false if Mutation failed.
+    """
+    randOneToTen = random.randint(1,10)
+    randOneToTwo = random.randint(1,2)
+    
+    traitBeingMutated = random.randint(0, len(child)-1)
+    childTraitBeingMutated = child[traitBeingMutated]
+    
+    board_size_x = 8
+    board_size_y = 8
+    
+    #mutate around 20% of children
+    if( randOneToTen <= 2 ):
+        # 50/50 roll on whether change x or y
+        if( randOneToTen == 1):
+            # 50/50 roll on whether subtr or add
+            if( randOneToTwo == 1):
+                #add one
+                newX = childTraitBeingMutated[0] + 1
+            else:
+                #subtr one
+                newX = childTraitBeingMutated[0] - 1
+                
+            #if new x coord is out of bounds
+            if( newX < 0 or newX > board_size_x - 1):
+                return False
+            
+            #apply new x
+            child[traitBeingMutated] = ( newX, childTraitBeingMutated[1] )
+        else:
+            # 50/50 roll on whether subtr or add
+            if( randOneToTwo == 1):
+                #add one
+                newY = childTraitBeingMutated[1] + 1
+            else:
+                #subtr one
+                newY = childTraitBeingMutated[1] - 1
+                
+            #if new Y coord is out of bounds
+            if( newY < 0 or newY > board_size_y - 1 ):
+                return False
+            
+            #apply new y
+            child[traitBeingMutated] = ( childTraitBeingMutated[0], newY )
+    
+    return True
+            
+            
+        
     #numpy.array[tuple(0,1)]
     return
 

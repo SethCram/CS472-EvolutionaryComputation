@@ -36,6 +36,10 @@ populationFitness = [None] * POPULATION_SIZE
 population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
 #print(population)
 
+#run for desired evolution iterations
+for j in range(0, EVOLVE_ITERATIONS ):
+    pass
+
 #walk thru each individual in pop
 for i in range(0, POPULATION_SIZE):
     #store individual w/ their fitness data
@@ -71,6 +75,9 @@ children = CrossoverBreed(parents[0], parents[1])
 
 #create mutated children
 for child in children:
-    Mutate(child)
+    #keep mutating child till successful
+    while(  Mutate(child) == False ): 
+        #do nothing
+        pass
     
 SurvivalReplacement(population, children)
