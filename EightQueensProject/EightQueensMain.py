@@ -43,8 +43,8 @@ for j in range(0, EVOLVE_ITERATIONS ):
         #store individual w/ their fitness data
         populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
        
-    #print pop-fitness before sorting
-    print(populationFitness)
+    #display pop-fitness before sorting
+    #print(populationFitness)
 
     #sort in ascending order by fitness (low/good to high/bad)
     populationFitness.sort(key=getFitness)
@@ -55,14 +55,14 @@ for j in range(0, EVOLVE_ITERATIONS ):
     for i in range(0, POPULATION_SIZE):
         population[i] = populationFitness[i].individual
 
-    worstFitnessData[j] = max( populationFitness, key=getFitness )
-    bestFitnessData[j] = min( populationFitness, key=getFitness )
+    worstFitnessData[j] = max( populationFitness, key=getFitness ).fitness
+    bestFitnessData[j] = min( populationFitness, key=getFitness ).fitness
 
     #find avg
     fitnessSum = 0
     for i in range(0, POPULATION_SIZE):
         fitnessSum += populationFitness[i].fitness
-    avgFitnessData[j] = fitnessSum/POPULATION_SIZE
+    avgFitnessData[j] = int( fitnessSum/POPULATION_SIZE )
 
     #if first iteration 
     if( j == 0 ):
@@ -81,3 +81,28 @@ for j in range(0, EVOLVE_ITERATIONS ):
         Mutate(child)
         
     SurvivalReplacement(population, children)
+    
+t = numpy.arange(0, EVOLVE_ITERATIONS)
+
+#plot1:
+plt.figure(figsize = (10,15)) #1st arg = horizontal space, 2nd arg = vertical space
+plt.subplot(3, 1, 1)
+plt.plot(t, bestFitnessData) 
+plt.grid() #add a grid to graph
+plt.title('Best Fitness per Iteration')
+plt.ylabel('Best Fitness')
+
+plt.subplot(3, 1, 2)
+plt.plot(t, avgFitnessData) 
+plt.grid() #add a grid to graph
+plt.title('Average Fitness per Iteration')
+plt.ylabel('Average Fitness')
+
+plt.subplot(3, 1, 3)
+plt.plot(t, worstFitnessData) 
+plt.grid() #add a grid to graph
+plt.title('Worst Fitness per Iteration')
+plt.ylabel('Worst Fitness')
+
+plt.xlabel('Iteration')
+plt.show()
