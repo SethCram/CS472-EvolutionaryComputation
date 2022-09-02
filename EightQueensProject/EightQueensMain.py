@@ -63,12 +63,12 @@ for j in range(0, EVOLVE_ITERATIONS ):
     avgFitnessData[j] = int( fitnessSum/POPULATION_SIZE )
 
     #if first iteration 
-    if( j == 0 ):
+    #if( j == 0 ):
         #select 2 parents from pop + show distr graph
-        parents = BreedSelection(population, displayDistributionGraph=True)
-    else:
+    #    parents = BreedSelection(population, displayDistributionGraph=True)
+    #else:
         #select 2 parents from pop
-        parents = BreedSelection(population)
+    parents = BreedSelection(population)
 
     #crossover breed parents to get children
     children = CrossoverBreed(parents[0], parents[1])
@@ -80,10 +80,13 @@ for j in range(0, EVOLVE_ITERATIONS ):
         
     SurvivalReplacement(population, children)
     
+    if( bestFitnessData[j] == 0 ):
+        print("Best fitness of zero reached at iteration ", j)
+    
 t = numpy.arange(0, EVOLVE_ITERATIONS)
 
 #plots:
-
+plt.rcParams.update({'font.size': 22})
 plt.figure(figsize = (10,15)) #1st arg = horizontal space, 2nd arg = vertical space
 #plt.subplot(3, 1, 1)
 plt.plot(t, bestFitnessData) 
