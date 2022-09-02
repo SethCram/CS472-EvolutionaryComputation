@@ -47,7 +47,7 @@ def CreateRandomIndividual(number_of_traits: int, board_size_x: int, board_size_
         
     return individual
 
-def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: int, board_size_y: int) -> None:
+def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: int, board_size_y: int) -> numpy.array:
     """
     Create population with random individuals using the given params.
     """
@@ -68,7 +68,7 @@ def CreatePopulation(population_size: int, number_of_traits: int, board_size_x: 
 """
 Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
 """
-def EvalFitness( queen_positions: numpy.array) -> int:
+def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
     """
     Evaluates fitness of a single individual.
     """
@@ -87,15 +87,19 @@ def EvalFitness( queen_positions: numpy.array) -> int:
                 #find the slope tween the two queens
                 changeInX, changeInY = (queen_positions[i][0] - queen_positions[j][0], queen_positions[i][1] - queen_positions[j][1])
                 
-                #if 2 queens occupying same spot:
+                #make sure 2 queens don't occupy the same spot
+                #assert (changeInX == 0 and changeInY == 0) == False
+                
+                #if queens are on the same x or y axis
                 if(changeInX == 0 or changeInY == 0):
+                    #incr collisions
                     collisions += 1
-                #if 2 queens not on same spot
+                #if queens aren't on same axis
                 else:
                     slope = abs( changeInY/changeInX )
                     
-                    #if horizontal, vertical, or diagonal collision tween Queens bc of slope
-                    if( slope in [0, 0.5, 1]):
+                    #if diagonal collision tween Queens bc of slope
+                    if( slope == 1):
                         collisions += 1
     
     #ensure num of collisions isn't above the max
@@ -106,9 +110,9 @@ def EvalFitness( queen_positions: numpy.array) -> int:
 @dataclass 
 class PopulationFitness:
     """
-    Class to keep track of all individuals and their fitness.
+    Class to keep track of an individual and their fitness score.
     """
-    individual: numpy.array
+    individual: numpy.array(tuple)
     fitness: int
 
 def getFitness( individual: PopulationFitness ) -> int:
@@ -151,7 +155,11 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
         #take randos using the calc'd prob and index range
         nums = numpy.random.choice(xIndexRange, size = 1000000, p = prob)
         #display distr histogram
+        plt.rcParams.update({'font.size': 22})
         plt.hist(nums, bins = pop_size)
+        plt.title("likelihood of each parent index being chosen")
+        plt.ylabel("likelihood of being chosen")
+        plt.xlabel("parent index")
         plt.show()
         
     #choose parent indices, make sure only take int part of ret'd data
@@ -252,6 +260,9 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
     child2 = numpy.array( [None] *  num_of_traits )
     children = numpy.array( [None] *  2 )
     
+    #board_size_x = 8
+    #board_size_y = 8
+    
     #walk thru traits of parents
     for i in range(0, num_of_traits):
         
@@ -267,7 +278,44 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
             #copy non-matching child to parent trait
             child1[i] = parent2[i]
             child2[i] = parent1[i]
+        """
+        checkIndex = 0
+        #if not first trait
+        if( i != 0):
+            #walk thru all traits
+            while( checkIndex < i):
+                #if another queen shares the same spot
+                if( child1[i] == child1[checkIndex] ):
+                    #fill that individual's trait using random x and y coords
+                    #child1[i] = (randbelow(board_size_x), randbelow(board_size_y))
+                    
+                    #use the other parent's coord
+                    child1[i] = child2[i]
+                    #restart duplicate check
+                    checkIndex = 0
+                #if another queen doesn't share same spot
+                else:
+                    #move onto next queen
+                    checkIndex += 1   
             
+            checkIndex = 0
+            
+            #walk thru all traits
+            while( checkIndex < i):
+                #if another queen shares the same spot
+                if( child2[i] == child2[checkIndex] ):
+                    #fill that individual's trait using random x and y coords
+                    #child1[i] = (randbelow(board_size_x), randbelow(board_size_y))
+                    
+                    #use the other parent's coord
+                    child2[i] = child1[i]
+                    #restart duplicate check
+                    checkIndex = 0
+                #if another queen doesn't share same spot
+                else:
+                    #move onto next queen
+                    checkIndex += 1  
+        """
     children[0] = child1
     children[1] = child2
 
@@ -337,7 +385,7 @@ def Mutate( child: numpy.array ) -> bool:
         """
         
         #get mutated coords
-        newX, newY = GetMutatedCoords(childTraitBeingMutated)            
+        newX, newY = getMutatedCoords(childTraitBeingMutated)            
         checkIndex = 0
         
         #remutate if new coords not unique on board or out of bounds
@@ -351,7 +399,7 @@ def Mutate( child: numpy.array ) -> bool:
                or (newX < 0 or newX > board_size_x - 1) 
                ):
                 #remutate and check again for valid mutation
-                newX, newY = GetMutatedCoords(childTraitBeingMutated)
+                newX, newY = getMutatedCoords(childTraitBeingMutated)
                 checkIndex = 0
             #if another queen doesn't share same spot + new coords in bounds
             else:
@@ -366,7 +414,7 @@ def Mutate( child: numpy.array ) -> bool:
     #return false bc didn't mutate
     return False      
 
-def GetMutatedCoords( childTraitBeingMutated: tuple ) -> tuple:
+def getMutatedCoords( childTraitBeingMutated: tuple ) -> tuple:
     """
     Get the mutated coordinates based off of the passed in trait +/- one of its x,y positions.
     """
