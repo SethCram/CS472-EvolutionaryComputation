@@ -30,10 +30,10 @@ worstFitnessData = numpy.empty( EVOLVE_ITERATIONS )
 bestFitnessData = numpy.empty( EVOLVE_ITERATIONS )
 avgFitnessData = numpy.empty( EVOLVE_ITERATIONS )
 
-population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
+runsToFindSol = 0
 
 #region test eval of fitness
-
+"""
 #init arr w/ None
 individual = numpy.array( [None] * NUMBER_OF_TRAITS )
 individual[0] = (0,0)
@@ -55,60 +55,77 @@ individual[5] = (6,2)
 individual[6] = (7,1)
 individual[7] = (7,7)
 indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens shouldn't be threatened)
-
+"""
 #endregion test eval of fitness
 
-#run for desired evolution iterations
-for j in range(0, EVOLVE_ITERATIONS ):
-    pass
+#create new and scrap old evo comp rslts if sol not found
+while(True):
+    runsToFindSol += 1
+    
+    #create new population
+    population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
 
-    #walk thru each individual in pop
-    for i in range(0, POPULATION_SIZE):
-        #store individual w/ their fitness data
-        populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
-       
-    #display pop-fitness before sorting
-    #print(populationFitness)
+    #run for desired evolution iterations
+    for j in range(0, EVOLVE_ITERATIONS ):
 
-    #sort in ascending order by fitness (low/good to high/bad)
-    populationFitness.sort(key=getFitness)
-
-    #print(populationFitness)
-
-    #copy sorted pop fitness data to reorder pop
-    for i in range(0, POPULATION_SIZE):
-        population[i] = populationFitness[i].individual
-
-    worstFitnessData[j] = max( populationFitness, key=getFitness ).fitness
-    bestFitnessData[j] = min( populationFitness, key=getFitness ).fitness
-
-    #find avg
-    fitnessSum = 0
-    for i in range(0, POPULATION_SIZE):
-        fitnessSum += populationFitness[i].fitness
-    avgFitnessData[j] = int( fitnessSum/POPULATION_SIZE )
-
-    #if first iteration 
-    #if( j == 0 ):
-        #select 2 parents from pop + show distr graph
-    #    parents = BreedSelection(population, displayDistributionGraph=True)
-    #else:
-        #select 2 parents from pop
-    parents = BreedSelection(population)
-
-    #crossover breed parents to get children
-    children = CrossoverBreed(parents[0], parents[1])
-
-    #create possibly mutated children
-    for child in children:
-        #mutate child 
-        Mutate(child)
+        #walk thru each individual in pop
+        for i in range(0, POPULATION_SIZE):
+            #store individual w/ their fitness data
+            populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
         
-    SurvivalReplacement(population, children)
+        #display pop-fitness before sorting
+        #print(populationFitness)
+
+        #sort in ascending order by fitness (low/good to high/bad)
+        populationFitness.sort(key=getFitness)
+
+        #print(populationFitness)
+
+        #copy sorted pop fitness data to reorder pop
+        for i in range(0, POPULATION_SIZE):
+            population[i] = populationFitness[i].individual
+
+        worstFitnessData[j] = max( populationFitness, key=getFitness ).fitness
+        bestFitnessData[j] = min( populationFitness, key=getFitness ).fitness
+
+        #find avg
+        fitnessSum = 0
+        for i in range(0, POPULATION_SIZE):
+            fitnessSum += populationFitness[i].fitness
+        avgFitnessData[j] = int( fitnessSum/POPULATION_SIZE )
+
+        #if first iteration 
+        #if( j == 0 ):
+            #select 2 parents from pop + show distr graph
+        #    parents = BreedSelection(population, displayDistributionGraph=True)
+        #else:
+            #select 2 parents from pop
+        parents = BreedSelection(population)
+
+        #crossover breed parents to get children
+        children = CrossoverBreed(parents[0], parents[1])
+
+        #create possibly mutated children
+        for child in children:
+            #mutate child 
+            Mutate(child)
+            
+        SurvivalReplacement(population, children)
+        
+        #print("asdfs %d" % j)
+        
+        if( bestFitnessData[j] == 0 ):
+            print("Best fitness of zero reached for configuration " + str( populationFitness ) )
     
-    if( bestFitnessData[j] == 0 ):
-        print("Best fitness of zero reached at iteration ", j)
+    print("run " + str(runsToFindSol) + " resulted in a best fitness of " + str(bestFitnessData[EVOLVE_ITERATIONS-1]))
     
+    #if zero fitness reached so sol found
+    if( bestFitnessData[EVOLVE_ITERATIONS-1] == 0 ):
+        print("it took " + str(runsToFindSol) + " runs to find a solution")
+        #exit loop
+        break
+        
+
 t = numpy.arange(0, EVOLVE_ITERATIONS)
 
 #plots:
