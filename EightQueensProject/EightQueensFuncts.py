@@ -1,7 +1,6 @@
 import random
 from secrets import randbelow
 import numpy
-from scipy.stats import truncnorm
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
@@ -157,20 +156,6 @@ def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
                 
                 #make sure 2 queens don't occupy the same spot
                 #assert (changeInX == 0 and changeInY == 0) == False
-                
-                """
-                #if queens are on the same x or y axis
-                if(changeInX == 0 or changeInY == 0):
-                    #incr collisions
-                    collisions += 1
-                #if queens aren't on same axis
-                else:
-                    slope = abs( changeInY/changeInX )
-                    
-                    #if diagonal collision tween Queens bc of slope
-                    if( slope == 1):
-                        collisions += 1
-                """
         
         #ensure num of collisions per queen isn't above max
         #assert collisions <= numOfQueens
@@ -239,64 +224,6 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
     parent1Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
     parent2Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
     
-    """Approach 4: use half norm to take half of the normal funct (every other val is half prob + goes over 100)
-    parent1Index = ss.halfnorm( loc=0,scale=30).rvs(size=100000).round().astype(int)
-    
-    #if overloaded to display distr graph
-    if( displayDistributionGraph):
-        #display distr graph
-        #nums = numpy.random.choice(x, size = 1000000, p = prob)
-        plt.hist(parent1Index, bins = pop_size)
-        plt.show()
-    """
-    
-    """Approach 3: use straightup truncnorm, conv to int, and graph it (every other val is half prob)
-    #use a normal distr to choose 2 parents (inclusive)
-    parent1Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=30).rvs(size=100000).round().astype(int)
-    parent2Index = truncnorm(a=0,b=pop_size-1, loc=0,scale=30).rvs(size=100000).round().astype(int)
-    
-    #if overloaded to display distr graph
-    if( displayDistributionGraph):
-        #display distr graph
-        #nums = numpy.random.choice(x, size = 1000000, p = prob)
-        plt.hist(parent1Index, bins = pop_size)
-        plt.show()
-    """
-    
-    """Approach 2: use truncnorm in place of norm for approach 1. (bad at zero)
-    x = numpy.arange(0, pop_size) #bc upper bound is exclusive
-    xU, xL = x + 0.5, x - 0.5
-    prob = ss.truncnorm.cdf(xU, a=0, b=pop_size-1, scale = 30) - ss.truncnorm.cdf(xL, 0, pop_size-1, scale = 30) #scale represents inner quartiles
-    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
-    
-    #if overloaded to display distr graph
-    if( displayDistributionGraph):
-        #display distr graph
-        nums = numpy.random.choice(x, size = 1000000, p = prob)
-        plt.hist(nums, bins = pop_size)
-        plt.show()
-    """
-    
-    """Approach 1: Turn normal distr into half norm using abs value and int conversion (bad at zero)
-    #generate a rando normal distr of ints
-    x = numpy.arange(-pop_size+1, pop_size) #bc upper bound is exclusive
-    xU, xL = x + 0.5, x - 0.5 
-    prob = ss.norm.cdf(xU, scale = 30) - ss.norm.cdf(xL, scale = 30) #scale represents inner quartiles
-    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
-    
-    #if overloaded to display distr graph
-    if( displayDistributionGraph):
-        #display distr graph
-        nums = abs(numpy.random.choice(x, size = 1000000, p = prob))
-        plt.hist(nums, bins = len(x))
-        plt.show()
-    
-    
-    #choose parent indices, make sure they're ints and positive
-    parent1Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
-    parent2Index = int( abs( numpy.random.choice(x, size = 1, p = prob) ) )
-    """
-    
     #make sure indices within array range
     assert parent1Index < pop_size and parent2Index < pop_size and type(parent1Index) == int and type(parent2Index) == int
     
@@ -351,44 +278,7 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
             #copy non-matching child to parent trait
             child1[i] = parent2[i]
             child2[i] = parent1[i]
-        """
-        checkIndex = 0
-        #if not first trait
-        if( i != 0):
-            #walk thru all traits
-            while( checkIndex < i):
-                #if another queen shares the same spot
-                if( child1[i] == child1[checkIndex] ):
-                    #fill that individual's trait using random x and y coords
-                    #child1[i] = (randbelow(board_size_x), randbelow(board_size_y))
-                    
-                    #use the other parent's coord
-                    child1[i] = child2[i]
-                    #restart duplicate check
-                    checkIndex = 0
-                #if another queen doesn't share same spot
-                else:
-                    #move onto next queen
-                    checkIndex += 1   
             
-            checkIndex = 0
-            
-            #walk thru all traits
-            while( checkIndex < i):
-                #if another queen shares the same spot
-                if( child2[i] == child2[checkIndex] ):
-                    #fill that individual's trait using random x and y coords
-                    #child1[i] = (randbelow(board_size_x), randbelow(board_size_y))
-                    
-                    #use the other parent's coord
-                    child2[i] = child1[i]
-                    #restart duplicate check
-                    checkIndex = 0
-                #if another queen doesn't share same spot
-                else:
-                    #move onto next queen
-                    checkIndex += 1  
-        """
     children[0] = child1
     children[1] = child2
 
@@ -407,77 +297,25 @@ def Mutate( child: numpy.array ) -> bool:
     Returns false if mutation not done.
     """
     randOneToTen = random.randint(1,10)
-    #randOneToTwo = random.randint(1,2)
     
     traitBeingMutated = random.randint(0, len(child)-1)
     childTraitBeingMutated = child[traitBeingMutated]
     
     board_size_x = 8
     board_size_y = 8
-    number_of_traits = 8
     
     #mutate around 20% of children
     if( randOneToTen <= 2 ):
-        """
-        #init new coords w/ old vals (one will be overwritten)
-        newX = childTraitBeingMutated[0]
-        newY = childTraitBeingMutated[1]
-        
-        
-        # 50/50 roll on whether change x or y
-        if( randOneToTen == 1):
-            # 50/50 roll on whether subtr or add
-            if( randOneToTwo == 1):
-                #add one
-                newX = childTraitBeingMutated[0] + 1
-            else:
-                #subtr one
-                newX = childTraitBeingMutated[0] - 1
-                
-            #if new x coord is out of bounds
-            if( newX < 0 or newX > board_size_x - 1):
-                return False
-            
-            #apply new x
-            #child[traitBeingMutated] = ( newX, childTraitBeingMutated[1] )
-        else:
-            # 50/50 roll on whether subtr or add
-            if( randOneToTwo == 1):
-                #add one
-                newY = childTraitBeingMutated[1] + 1
-            else:
-                #subtr one
-                newY = childTraitBeingMutated[1] - 1
-                
-            #if new Y coord is out of bounds
-            if( newY < 0 or newY > board_size_y - 1 ):
-                return False
-            
-            #apply new y
-            #child[traitBeingMutated] = ( childTraitBeingMutated[0], newY )
-        """
-        
         #get mutated coords
         newX, newY = getMutatedCoords(childTraitBeingMutated)            
-        checkIndex = 0
         
-        #remutate if new coords not unique on board or out of bounds
-            
-        #walk thru all traits
-        while( checkIndex < number_of_traits):
-            #if another queen shares the same spot, or new Y or X coord out of bounds
-            if( 
-               (checkIndex != traitBeingMutated and newX == child[checkIndex][0] and newY == child[checkIndex][1])
-               or (newY < 0 or newY > board_size_y - 1)
+        #remutate if new coords not on board or out of bounds
+        while( 
+               (newY < 0 or newY > board_size_y - 1)
                or (newX < 0 or newX > board_size_x - 1) 
-               ):
-                #remutate and check again for valid mutation
-                newX, newY = getMutatedCoords(childTraitBeingMutated)
-                checkIndex = 0
-            #if another queen doesn't share same spot + new coords in bounds
-            else:
-                #move onto next queen
-                checkIndex += 1
+            ):
+            #remutate and check again for valid mutation
+            newX, newY = getMutatedCoords(childTraitBeingMutated)
                 
         #apply new trait
         child[traitBeingMutated] = (newX, newY)
