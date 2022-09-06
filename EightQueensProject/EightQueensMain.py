@@ -32,6 +32,32 @@ avgFitnessData = numpy.empty( EVOLVE_ITERATIONS )
 
 population = CreatePopulation(POPULATION_SIZE, NUMBER_OF_TRAITS, BOARD_SIZE_X, BOARD_SIZE_Y)
 
+#region test eval of fitness
+
+#init arr w/ None
+individual = numpy.array( [None] * NUMBER_OF_TRAITS )
+individual[0] = (0,0)
+individual[1] = (0,0)
+individual[2] = (0,0)
+individual[3] = (0,0)
+individual[4] = (0,0)
+individual[5] = (0,0)
+individual[6] = (0,0)
+individual[7] = (0,0)
+indivFitness = EvalFitness(individual)
+
+individual[0] = (1,1)
+individual[1] = (4,0)
+individual[2] = (4,2)
+individual[3] = (4,4)
+individual[4] = (1,7)
+individual[5] = (6,2)
+individual[6] = (7,1)
+individual[7] = (7,7)
+indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens shouldn't be threatened)
+
+#endregion test eval of fitness
+
 #run for desired evolution iterations
 for j in range(0, EVOLVE_ITERATIONS ):
     pass

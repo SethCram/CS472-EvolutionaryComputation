@@ -79,17 +79,86 @@ def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
     #walk thru every queen on board
     for i in range(0, numOfQueens):
         
+        #for each queen, use some stats
+        checkingQueen = queen_positions[i]
+        posY = False
+        negY = False
+        posX = False
+        negX = False
+        diag1 = False
+        diag2 = False
+        diag3 = False
+        diag4 = False
+        
         #for every queen on board, compare it to every other queen on the board
         for j in range(0, numOfQueens):
             
-            #if not comparing the same queen (queens cant occupy the same space)
+            #if not comparing the same queen (queens can occupy the same space)
             if( i != j ):
-                #find the slope tween the two queens
-                changeInX, changeInY = (queen_positions[i][0] - queen_positions[j][0], queen_positions[i][1] - queen_positions[j][1])
+                               
+                otherQueen = queen_positions[j]
+                
+                #find the x,y diffs tween the two queens
+                changeInX, changeInY = (otherQueen[0] - checkingQueen[0], otherQueen[1] - checkingQueen[1])
+                
+                #store state of the x,y queen changes
+                posChangeInX = changeInX > 0
+                negChangeInX = changeInX < 0
+                posChangeInY = changeInY > 0
+                negChangeInY = changeInY < 0
+                
+                #if no change in y
+                if( changeInY == 0 ):
+                    #if no change in X
+                    if( changeInX == 0 ):
+                        #queens on top of one another so incr collisions
+                        collisions += 1
+                    #if pos X queen not found yet and pos change in X
+                    elif( posX == False and posChangeInX ):
+                        collisions += 1
+                        posX = True
+                    #if neg X queen not found yet and neg change in X
+                    elif( negX == False and negChangeInX ):
+                        collisions += 1
+                        negX = True
+                #if no change in X
+                elif( changeInX == 0 ):
+                    #if pos Y queen not found yet and pos change in Y
+                    if( posY == False and posChangeInY ):
+                        collisions += 1
+                        posY = True
+                    #if neg Y queen not found yet and neg change in Y
+                    elif( negY == False and negChangeInY ):
+                        collisions += 1
+                        negY = True
+                #if change in both x and y
+                else:
+                    #calc positive slope
+                    slope = abs( changeInY/changeInX )
+                    
+                    #if diagonal collision
+                    if( slope == 1 ):
+                        #if 1st quadrant diagonal collision
+                        if(posChangeInX and posChangeInY and diag1 == False):
+                            collisions += 1
+                            diag1 = True
+                        #if 2nd quadrant diagonal collision
+                        elif( negChangeInX and posChangeInY and diag2 == False ):
+                            collisions += 1
+                            diag2 = True
+                        #if 3rd quadrant diagonal collision
+                        elif( negChangeInX and negChangeInY and diag3 == False ):
+                            collisions += 1
+                            diag3 = True
+                        #if 4th quadrant diagonal collision
+                        elif( posChangeInX and negChangeInY and diag4 == False ):
+                            collisions += 1
+                            diag4 = True
                 
                 #make sure 2 queens don't occupy the same spot
                 #assert (changeInX == 0 and changeInY == 0) == False
                 
+                """
                 #if queens are on the same x or y axis
                 if(changeInX == 0 or changeInY == 0):
                     #incr collisions
@@ -101,9 +170,13 @@ def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
                     #if diagonal collision tween Queens bc of slope
                     if( slope == 1):
                         collisions += 1
+                """
+        
+        #ensure num of collisions per queen isn't above max
+        #assert collisions <= numOfQueens
     
-    #ensure num of collisions isn't above the max
-    assert collisions <= numOfQueens * numOfQueens
+    #ensure num of collisions for this board isn't above the max
+    assert collisions <= numOfQueens * (numOfQueens - 1)
                 
     return collisions
 
