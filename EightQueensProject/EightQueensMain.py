@@ -1,14 +1,15 @@
+"""
+Author: Seth Cram
+Class: Evolutionary Computation - CS472/CS572
+Instructions:
+    Collect data on the worst, average, and best fitness within the population at each iteration.
+    Create visuals of the data and write a short paper detailing your EA and results.
+"""
+
 #import all functs from 8 queens functs
 from EightQueensFuncts import *
 import matplotlib.pyplot as plt
 import numpy
-
-"""
-Instructions:
-Collect data on the worst, average, and best fitness within the population at each iteration.
-Create visuals of the data and write a short paper detailing your EA and results.
-
-"""
 
 #init unchanging constants
 POPULATION_SIZE = 100
@@ -21,9 +22,6 @@ CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
 #init space for arrays
 
 populationFitness = [None] * POPULATION_SIZE
-#worstFitnessData = [None] * EVOLVE_ITERATIONS
-#bestFitnessData = [None] * EVOLVE_ITERATIONS
-#avgFitnessData = [None] * EVOLVE_ITERATIONS
 
 
 worstFitnessData = numpy.empty( EVOLVE_ITERATIONS )
