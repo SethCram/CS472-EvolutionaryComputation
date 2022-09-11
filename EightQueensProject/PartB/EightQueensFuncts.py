@@ -301,82 +301,41 @@ def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array,
     
     #make sure all vals in child replaced
     assert outsideRangeDefault not in child, "Not all traits in child replaced by a parent trait: {}".format(child)
+    
+    return
 
 #endregion Breeding Functs
 
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
-#def Mutate( child: numpy.array ) -> numpy.array:
 def Mutate( child: numpy.array ) -> bool:
     """
-    Not a guaranteed mutation. Mutation will occur in only 20% of children passed to this function.
+    Not a guaranteed mutation. 
+    Mutation will occur in only 1 in every (2*number of traits of child) passed to this function.
+    Peforms mutation through swapping 2 random traits of passed in child.  
     Returns true if mutation done.
     Returns false if mutation not done.
     """
-    randOneToTen = random.randint(1,10)
+    num_of_traits = len(child)
     
-    traitBeingMutated = random.randint(0, len(child)-1)
-    childTraitBeingMutated = child[traitBeingMutated]
-    
-    board_size_x = 8
-    board_size_y = 8
-    
-    #mutate around 20% of children
-    if( randOneToTen <= 2 ):
-        #get mutated coords
-        newX, newY = getMutatedCoords(childTraitBeingMutated)            
+    #mutate 1 in every (2*number of traits of child)
+    mutationChance = random.randint(1, num_of_traits * 2 )
+    if( mutationChance == 1 ):
         
-        #remutate if new coords not on board or out of bounds
-        while( 
-               (newY < 0 or newY > board_size_y - 1)
-               or (newX < 0 or newX > board_size_x - 1) 
-            ):
-            #remutate and check again for valid mutation
-            newX, newY = getMutatedCoords(childTraitBeingMutated)
-                
-        #apply new trait
-        child[traitBeingMutated] = (newX, newY)
+        traitBeingSwapped= random.randint(0, num_of_traits-1)
+        otherTraitBeingSwapped= random.randint(0, num_of_traits-1)
+        childTraitBeingMutated = child[traitBeingSwapped]
+        
+        #apply new traits thru swapping
+        child[traitBeingSwapped] = child[otherTraitBeingSwapped]
+        child[otherTraitBeingSwapped] = childTraitBeingMutated
+        
         #ret true bc mutated
         return True
     
     #return false bc didn't mutate
     return False      
-
-def getMutatedCoords( childTraitBeingMutated: tuple ) -> tuple:
-    """
-    Get the mutated coordinates based off of the passed in trait +/- one of its x,y positions.
-    """
-    
-    randOneToTwoChangeXY = random.randint(1,2)
-    randOneToTwoChangePlusMinus = random.randint(1,2)
-    
-    oldX = childTraitBeingMutated[0]
-    oldY = childTraitBeingMutated[1]
-    
-    # 50/50 roll on whether change x or y
-    if( randOneToTwoChangeXY == 1):
-        # 50/50 roll on whether subtr or add
-        if( randOneToTwoChangePlusMinus == 1):
-            #add one
-            newX = oldX + 1
-        else:
-            #subtr one
-            newX = oldX - 1
-        
-        #return new coords
-        return (newX, oldY)
-    else:
-        # 50/50 roll on whether subtr or add
-        if( randOneToTwoChangePlusMinus == 1):
-            #add one
-            newY = oldY + 1
-        else:
-            #subtr one
-            newY = oldY - 1
-            
-        #return new coords
-        return (oldX, newY)
 
 """
 Create a survival function which removes the two worst individuals from the population, and then puts the new children into the population.
