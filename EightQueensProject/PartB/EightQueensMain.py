@@ -24,9 +24,9 @@ CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
 populationFitness = [None] * POPULATION_SIZE
 
 
-worstFitnessData = numpy.empty( EVOLVE_ITERATIONS )
-bestFitnessData = numpy.empty( EVOLVE_ITERATIONS )
-avgFitnessData = numpy.empty( EVOLVE_ITERATIONS )
+worstFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
+bestFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
+avgFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
 
 runsToFindSol = 0
 
@@ -65,11 +65,7 @@ while(True):
     #walk thru each individual in pop
     for i in range(0, POPULATION_SIZE):
         #store individual w/ their fitness data
-        populationFitness[i] = PopulationFitness( population[i], EvalFitness(population[i]) )
-        
-    #copy sorted pop fitness data to reorder pop
-    for i in range(0, POPULATION_SIZE):
-        population[i] = populationFitness[i].individual
+        populationFitness[i] = IndividualFitness( population[i], EvalFitness(population[i]) )
         
     #sort in ascending order by fitness (low/good to high/bad)
     populationFitness.sort(key=getFitness)
@@ -91,22 +87,20 @@ while(True):
         #if first iteration 
         #if( j == 0 ):
             #select 2 parents from pop + show distr graph
-        #    parents = BreedSelection(population, displayDistributionGraph=True)
+        #    parents = BreedSelection(populationFitness, displayDistributionGraph=True)
         #else:
             #select 2 parents from pop
-        parents = BreedSelection(population)
+        parents = BreedSelection(populationFitness)
 
         #crossover breed parents to get children
-        children = CrossoverBreed(parents[0], parents[1])
+        children = CrossoverBreed(parents[0].individual, parents[1].individual)
 
         #create possibly mutated children
         for child in children:
             #mutate child 
             Mutate(child)
             
-        SurvivalReplacement(population, children)
-        
-        #insertion sort to pop data and pop
+        SurvivalReplacement(populationFitness, children)
         
         #print("asdfs %d" % j)
         

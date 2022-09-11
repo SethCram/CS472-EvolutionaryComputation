@@ -11,6 +11,7 @@ import numpy
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+import bisect
 
 #region Creation Functs
 
@@ -142,14 +143,14 @@ def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
     return collisions
 
 @dataclass 
-class PopulationFitness:
+class IndividualFitness:
     """
     Class to keep track of an individual and their fitness score.
     """
     individual: numpy.array(int)
     fitness: int
 
-def getFitness( individual: PopulationFitness ) -> int:
+def getFitness( individual: IndividualFitness ) -> int:
         return individual.fitness
     
 #endregion Fitness Functs and Class
@@ -160,7 +161,7 @@ def getFitness( individual: PopulationFitness ) -> int:
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
 """
 #def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
-def BreedSelection( population: numpy.array, displayDistributionGraph = False ) -> numpy.array(numpy.array(int)):
+def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.array(numpy.array(int)):
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.
@@ -168,7 +169,7 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
     """
     
     #store pop size
-    pop_size = len(population)
+    pop_size = len(populationFitness)
     
     """
     Approach 5: tried using half norm and incr'd to take interval 1-100 then subtr 1 after.
@@ -209,8 +210,8 @@ def BreedSelection( population: numpy.array, displayDistributionGraph = False ) 
         parent2Index = int( numpy.random.choice(xIndexRange, size = 1, p = prob) )
     
     #get parents using indices
-    parent1 = population[parent1Index]
-    parent2 = population[parent2Index]
+    parent1 = populationFitness[parent1Index]
+    parent2 = populationFitness[parent2Index]
     #store parents in an array
     parentsArray = numpy.array( [None] * 2)
     parentsArray[0] = parent1
@@ -341,19 +342,25 @@ def Mutate( child: numpy.array ) -> bool:
 Create a survival function which removes the two worst individuals from the population, and then puts the new children into the population.
 """
 #def SurvivalReplacement( population: numpy.array, children: tuple( numpy.array, numpy.array) ) -> None: #change children input to array of array tuples for scalability?
-def SurvivalReplacement( population: numpy.array, children: numpy.array ) -> None:
+def SurvivalReplacement( populationFitness: list, children: numpy.array ) -> None:
     """
+    Evaluates the newly created childrens' fitness, then uses an insertion sort to add them to the list, and cut out the last two elements.
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
 
     Args:
-        population (numpy.array): _description_
-        children (numpy.array): _description_
+        population (list): list of individual fitness objects
+        children (numpy.array): array of two children individual fitness objects
     """
     #cache lengths of pop and children
-    population_size = len(population)
-    numOfChildren = len(children)
-
-    #replace end of pop (best fit/worst off) w/ children
-    population[population_size-numOfChildren:population_size] = children #array slicing is exclusive on upper bound
+    population_size = len(populationFitness)
+    
+    for child in children:
+        childFitness = IndividualFitness(child, EvalFitness(child))
+        
+        #insertion sort to pop data and pop
+        bisect.insort(populationFitness, childFitness, key=getFitness)
+    
+    #cut out two worst fitness individuals
+    populationFitness[:] = populationFitness[0:population_size]
     
     return
