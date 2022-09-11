@@ -22,7 +22,7 @@ def CreateRandomIndividual( board_size_x: int, board_size_y: int) -> numpy.array
     """
     
     #init arr w/ enough space
-    individual = numpy.empty( board_size_x )
+    individual = numpy.empty( board_size_x, dtype=int )
     
     #walk thru each trait of individual
     for traitIndex in range(0, board_size_x):
@@ -231,10 +231,12 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
     
     num_of_traits = len(parent1)
     
+    outsideRangeDefault = 20
+    
     #init child arrs
-    child1 = numpy.full( num_of_traits, 20, dtype=int ) #need to be below 0 or above 7
-    child2 = numpy.full( num_of_traits, 20, dtype=int )
-    children = numpy.empty( [None] * 2 )
+    child1 = numpy.full( num_of_traits, outsideRangeDefault, dtype=int ) #need to be below 0 or above 7
+    child2 = numpy.full( num_of_traits, outsideRangeDefault, dtype=int )
+    children = numpy.array( [None] * 2 )
     
     #crossover point
     xpoint = random.randrange(1,7) #don't want at very beginning or end bc don't wanna copy parents
@@ -244,8 +246,8 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
     child2[:xpoint] = parent2[:xpoint]
     
     #get tails for each child from other parent
-    OnePointTailCrossover( child=child1, xpoint=xpoint, parent=parent2 )
-    OnePointTailCrossover( child=child2, xpoint=xpoint, parent=parent1)
+    OnePointTailCrossover( child=child1, xpoint=xpoint, parent=parent2, outsideRangeDefault=outsideRangeDefault )
+    OnePointTailCrossover( child=child2, xpoint=xpoint, parent=parent1, outsideRangeDefault=outsideRangeDefault)
 
     #place childs into children arr
     children[0] = child1
@@ -253,14 +255,15 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
 
     return children
 
-def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array) -> None:
+def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array, outsideRangeDefault: int) -> None:
     """A 1-point crossover performed with the given parent and child at the xpoint. 
         No individual can have more than one of the same trait.
 
     Args:
         parent (numpy.array): Parent the child's traits are taken from.
-        xpoint (int): Crossover point the tail starts on.
+        xpoint (int): Crossover point the tail starts on (inclusive).
         child (numpy.array): Child needing its tail filled.
+        outsideRangeDefault (int): Value for error checking to make sure child filled.
     """
     
     num_of_traits = len(parent)
@@ -270,7 +273,10 @@ def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array)
     #fill in each child's tail w/ the other parent
     for tailIndex in range(xpoint, num_of_traits):
         
-        parentIndex = tailIndex
+        #if start of for loop/child filling
+        if(tailIndex == xpoint):
+            #start parent index at tail index
+            parentIndex = tailIndex
         
         #wait till full loop around
         while( parentIndexIncrs < num_of_traits ):
@@ -292,6 +298,9 @@ def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array)
                 child[tailIndex] = parentCandidateTrait
                 #move onto nxt child trait that needs filling
                 break
+    
+    #make sure all vals in child replaced
+    assert outsideRangeDefault not in child, "Not all traits in child replaced by a parent trait: {}".format(child)
 
 #endregion Breeding Functs
 
