@@ -146,7 +146,7 @@ class PopulationFitness:
     """
     Class to keep track of an individual and their fitness score.
     """
-    individual: numpy.array(tuple)
+    individual: numpy.array(int)
     fitness: int
 
 def getFitness( individual: PopulationFitness ) -> int:
@@ -160,7 +160,7 @@ def getFitness( individual: PopulationFitness ) -> int:
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
 """
 #def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
-def BreedSelection( population: numpy.array, displayDistributionGraph = False ) -> numpy.array(numpy.array(tuple)):
+def BreedSelection( population: numpy.array, displayDistributionGraph = False ) -> numpy.array(numpy.array(int)):
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.
@@ -226,39 +226,72 @@ Create a crossover function, which will accept two individuals (parents), and cr
 def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
     """
     Assumes both parents have the same number of traits (queens).
-    Randomly assign queen positions from each parent, regardless of fitness.
+    A variation on 1-point crossover.
     """
     
     num_of_traits = len(parent1)
     
     #init child arrs
-    child1 = numpy.array( [None] *  num_of_traits )
-    child2 = numpy.array( [None] *  num_of_traits )
-    children = numpy.array( [None] *  2 )
+    child1 = numpy.full( num_of_traits, 20, dtype=int ) #need to be below 0 or above 7
+    child2 = numpy.full( num_of_traits, 20, dtype=int )
+    children = numpy.empty( [None] * 2 )
     
-    #board_size_x = 8
-    #board_size_y = 8
+    #crossover point
+    xpoint = random.randrange(1,7) #don't want at very beginning or end bc don't wanna copy parents
     
-    #walk thru traits of parents
-    for i in range(0, num_of_traits):
-        
-        #roll the dice 50/50 on what child gets what parent's trait
-        
-        #if want waitings based on fitness of certain traits, need to attach a fitness score to each trait/Queen
-        
-        if( random.randint(0,1) == 1 ):
-            #copy matching child to parent trait
-            child1[i] = parent1[i]
-            child2[i] = parent2[i]
-        else:
-            #copy non-matching child to parent trait
-            child1[i] = parent2[i]
-            child2[i] = parent1[i]
-            
+    #copy over start of each parent
+    child1[:xpoint] = parent1[:xpoint]
+    child2[:xpoint] = parent2[:xpoint]
+    
+    #get tails for each child from other parent
+    OnePointTailCrossover( child=child1, xpoint=xpoint, parent=parent2 )
+    OnePointTailCrossover( child=child2, xpoint=xpoint, parent=parent1)
+
+    #place childs into children arr
     children[0] = child1
     children[1] = child2
 
     return children
+
+def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array) -> None:
+    """A 1-point crossover performed with the given parent and child at the xpoint. 
+        No individual can have more than one of the same trait.
+
+    Args:
+        parent (numpy.array): Parent the child's traits are taken from.
+        xpoint (int): Crossover point the tail starts on.
+        child (numpy.array): Child needing its tail filled.
+    """
+    
+    num_of_traits = len(parent)
+    
+    parentIndexIncrs = 0
+
+    #fill in each child's tail w/ the other parent
+    for tailIndex in range(xpoint, num_of_traits):
+        
+        parentIndex = tailIndex
+        
+        #wait till full loop around
+        while( parentIndexIncrs < num_of_traits ):
+        
+            parentCandidateTrait = parent[parentIndex] 
+            
+            #look for nxt parent index
+            parentIndex += 1
+            parentIndexIncrs += 1
+            
+            #if parent index reached the end
+            if(parentIndex == num_of_traits):
+                #wrap it around
+                parentIndex = 0
+            
+            #if trait not in child already
+            if( parentCandidateTrait not in child ):
+                #copy it over
+                child[tailIndex] = parentCandidateTrait
+                #move onto nxt child trait that needs filling
+                break
 
 #endregion Breeding Functs
 
