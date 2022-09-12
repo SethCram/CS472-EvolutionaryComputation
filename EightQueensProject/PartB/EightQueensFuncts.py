@@ -139,7 +139,7 @@ def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
                 assert (changeInX != 0 and changeInY != 0) == True, "Queen {} and {} are vertical or horizontal of one another.".format(j, i)
     
     #ensure num of collisions for this board isn't above the max
-    assert collisions <= (numOfQueens - 1) * 4
+    assert collisions <= (numOfQueens - 1) * 4, "More than the maximum number of collisions occurred."
                 
     return collisions
 

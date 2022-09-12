@@ -22,6 +22,7 @@ BOARD_SIZE_X = 8
 BOARD_SIZE_Y = 8
 EVOLVE_ITERATIONS = 1000
 CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
+POSSIBLE_SOLUTIONS = 92
     
 #init space for arrays
 
