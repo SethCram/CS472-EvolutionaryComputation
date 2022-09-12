@@ -1,10 +1,14 @@
 """
 Author: Seth Cram
 Class: Evolutionary Computation - CS472/CS572
+Project 1 part b - 8 Queen puzzle
 Instructions:
     Collect data on the worst, average, and best fitness within the population at each iteration.
     Create visuals of the data and write a short paper detailing your EA and results.
 """
+
+import time
+start_time = time.time()
 
 #import all functs from 8 queens functs
 from EightQueensFuncts import *
@@ -104,8 +108,8 @@ while(True):
         
         #print("asdfs %d" % j)
         
-        if( bestFitnessData[j] == 0 ):
-            print("Best fitness of zero reached for configuration " + str( populationFitness ) )
+        #if( bestFitnessData[j] == 0 ):
+        #    print("Best fitness of zero reached for configuration " + str( populationFitness ) )
     
     print("run " + str(runsToFindSol) + " resulted in a best fitness of " + str(bestFitnessData[EVOLVE_ITERATIONS-1]))
     
@@ -115,6 +119,8 @@ while(True):
         #exit loop
         break
         
+
+print("My program took", time.time() - start_time, "seconds to run")
 
 t = numpy.arange(0, EVOLVE_ITERATIONS)
 

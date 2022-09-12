@@ -1,6 +1,7 @@
 """
 Author: Seth Cram
 Class: Evolutionary Computation - CS472/CS572
+Project 1 part b - 8 Queen puzzle
 Instructions:
     Collect data on the worst, average, and best fitness within the population at each iteration.
     Create visuals of the data and write a short paper detailing your EA and results.

@@ -6,6 +6,9 @@ Instructions:
     Create visuals of the data and write a short paper detailing your EA and results.
 """
 
+import time
+start_time = time.time()
+
 #import all functs from 8 queens functs
 from EightQueensFuncts import *
 import matplotlib.pyplot as plt
@@ -123,6 +126,7 @@ while(True):
         #exit loop
         break
         
+print("My program took", time.time() - start_time, "seconds to run")
 
 t = numpy.arange(0, EVOLVE_ITERATIONS)
 
