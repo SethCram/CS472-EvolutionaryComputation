@@ -16,7 +16,7 @@ import bisect
 
 #region Creation Functs
 
-def CreateRandomIndividual( board_size_x: int, board_size_y: int) -> numpy.array:
+def CreateRandomIndividual( board_size_x: int, board_size_y: int) -> numpy.ndarray:
     """
     Creates an individual with random traits.
     Eight queens prob traits = queens' positions.
@@ -55,7 +55,7 @@ def CreateRandomIndividual( board_size_x: int, board_size_y: int) -> numpy.array
         
     return individual
 
-def CreatePopulation(population_size: int, board_size_x: int, board_size_y: int) -> numpy.array:
+def CreatePopulation(population_size: int, board_size_x: int, board_size_y: int) -> numpy.ndarray:
     """
     Create population with random individuals using the given params.
     """
@@ -76,7 +76,7 @@ def CreatePopulation(population_size: int, board_size_x: int, board_size_y: int)
 """
 Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
 """
-def EvalFitness( queen_positions: numpy.array(tuple) ) -> int:
+def EvalFitness( queen_positions: numpy.ndarray ) -> int:
     """
     Evaluates fitness of a single individual.
     Queens can't occupy the same space.
@@ -148,7 +148,7 @@ class IndividualFitness:
     """
     Class to keep track of an individual and their fitness score.
     """
-    individual: numpy.array(int)
+    individual: numpy.ndarray
     fitness: int
 
 def getFitness( individual: IndividualFitness ) -> int:
@@ -161,8 +161,7 @@ def getFitness( individual: IndividualFitness ) -> int:
 """
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
 """
-#def BreedSelection( population: numpy.array[numpy.array[tuple()]] ) -> tuple(int, int): #change ret type to Array of ints for scalability?
-def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.array(numpy.array(int)):
+def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.
@@ -224,8 +223,7 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
 """
 Create a crossover function, which will accept two individuals (parents), and create two children, which should inherit from the parents.
 """
-#def CrossoverBreed( parent1: numpy.array[tuple()], parent2: numpy.array[tuple()] ) -> tuple( numpy.array[tuple()], numpy.array[tuple()] ): #change input and ret type to Array of Array of tuples for scalability?
-def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
+def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
     """
     Assumes both parents have the same number of traits (queens).
     A variation on 1-point crossover.
@@ -257,14 +255,14 @@ def CrossoverBreed( parent1: numpy.array, parent2: numpy.array ) -> numpy.array:
 
     return children
 
-def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array, outsideRangeDefault: int) -> None:
+def OnePointTailCrossover( parent: numpy.ndarray, xpoint: int, child: numpy.ndarray, outsideRangeDefault: int) -> None:
     """A 1-point crossover performed with the given parent and child at the xpoint. 
         No individual can have more than one of the same trait.
 
     Args:
-        parent (numpy.array): Parent the child's traits are taken from.
+        parent (numpy.ndarray): Parent the child's traits are taken from.
         xpoint (int): Crossover point the tail starts on (inclusive).
-        child (numpy.array): Child needing its tail filled.
+        child (numpy.ndarray): Child needing its tail filled.
         outsideRangeDefault (int): Value for error checking to make sure child filled.
     """
     
@@ -311,7 +309,7 @@ def OnePointTailCrossover( parent: numpy.array, xpoint: int, child: numpy.array,
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
-def Mutate( child: numpy.array ) -> bool:
+def Mutate( child: numpy.ndarray ) -> bool:
     """
     Not a guaranteed mutation. 
     Mutation will occur in only 1 in every (2*number of traits of child) passed to this function.
@@ -342,15 +340,14 @@ def Mutate( child: numpy.array ) -> bool:
 """
 Create a survival function which removes the two worst individuals from the population, and then puts the new children into the population.
 """
-#def SurvivalReplacement( population: numpy.array, children: tuple( numpy.array, numpy.array) ) -> None: #change children input to array of array tuples for scalability?
-def SurvivalReplacement( populationFitness: list, children: numpy.array ) -> None:
+def SurvivalReplacement( populationFitness: list, children: numpy.ndarray ) -> None:
     """
     Evaluates the newly created childrens' fitness, then uses an insertion sort to add them to the list, and cut out the last two elements.
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
 
     Args:
         population (list): list of individual fitness objects
-        children (numpy.array): array of two children individual fitness objects
+        children (numpy.ndarray): array of two children individual fitness objects
     """
     #cache lengths of pop and children
     population_size = len(populationFitness)

@@ -22,20 +22,26 @@ BOARD_SIZE_Y = 8
 EVOLVE_ITERATIONS = 1000
 CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
 POSSIBLE_SOLUTIONS = 92
-DESIRED_SOLUTIONS = 5
+#DESIRED_SOLUTIONS = 5
     
 #init space for arrays
 
 populationFitness = [None] * POPULATION_SIZE
+
 #populationHistory = numpy.empty( EVOLVE_ITERATIONS, dtype=numpy.ndarray )
 #phList = numpy.empty( NUMBER_OF_TRAITS, dtype=numpy.ndarray )
-elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
+
+#elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
+#elapsedTimeToFindSol = []
 
 worstFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
 bestFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
 avgFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
 
-showFitnessData = False
+SHOW_FITNESS_DATA = False
+
+#Sets cannot have two items with the same value.
+solutions = set()
 
 #region test eval of fitness
 """#init arr w/ None
@@ -62,7 +68,11 @@ indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens
 """
 #endregion test eval of fitness
 
-for k in range(0, DESIRED_SOLUTIONS):
+#sol number
+k = 0
+
+#for k in range(0, DESIRED_SOLUTIONS):
+while( len(solutions) < POSSIBLE_SOLUTIONS ):
     runsToFindSol = 0
     start_time = time.time()
 
@@ -75,8 +85,15 @@ for k in range(0, DESIRED_SOLUTIONS):
         
         #walk thru each individual in pop
         for i in range(0, POPULATION_SIZE):
+            individual = population[i]
+            individualFitness = EvalFitness(individual)
+            
             #store individual w/ their fitness data
-            populationFitness[i] = IndividualFitness( population[i], EvalFitness(population[i]) )
+            populationFitness[i] = IndividualFitness( individual, individualFitness )
+            
+            #if added individual is a sol
+            if(individualFitness == 0):
+                solutions.add(individual)
             
         #sort in ascending order by fitness (low/good to high/bad)
         populationFitness.sort(key=getFitness)
@@ -123,10 +140,14 @@ for k in range(0, DESIRED_SOLUTIONS):
             #crossover breed parents to get children
             children = CrossoverBreed(parents[0].individual, parents[1].individual)
 
-            #create possibly mutated children
+            #walk thru children
             for child in children:
                 #mutate child 
                 Mutate(child)
+                
+                #if fitness of child is 0
+                if(EvalFitness(child) == 0):
+                    solutions.add(child)
                 
             SurvivalReplacement(populationFitness, children)
             
@@ -143,11 +164,14 @@ for k in range(0, DESIRED_SOLUTIONS):
             #exit loop
             break
         
-    elapsedTimeToFindSol[k] = time.time() - start_time
+    #elapsedTimeToFindSol[k] = time.time() - start_time
+    #elapsedTimeToFindSol.append(time.time() - start_time)
+    
+    k += 1
     
     #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
     
-    if(showFitnessData):
+    if(SHOW_FITNESS_DATA):
         t = numpy.arange(0, EVOLVE_ITERATIONS)
         
         plt.rcParams.update({'font.size': 22})
@@ -174,7 +198,9 @@ for k in range(0, DESIRED_SOLUTIONS):
         plt.xlabel('Iteration')
         plt.show()
 
-t1 = numpy.arange(0, DESIRED_SOLUTIONS)
+"""
+#t1 = numpy.arange(0, DESIRED_SOLUTIONS)
+t1 = numpy.arange(0, k)
 
 #plots:
 plt.rcParams.update({'font.size': 22})
@@ -185,6 +211,6 @@ plt.plot(t1, elapsedTimeToFindSol)
 plt.grid() #add a grid to graph
 plt.title('Elapsed Time per Solution')
 plt.ylabel('Elapsed Time (s)')
-plt.xlabel('Solution Number')
+plt.xlabel('Solution')
 plt.show()
-
+"""
