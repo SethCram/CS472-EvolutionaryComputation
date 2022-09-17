@@ -71,11 +71,12 @@ indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens
 #sol number
 k = 0
 
+start_time = time.time()
+
 #for k in range(0, DESIRED_SOLUTIONS):
 while( len(solutions) < POSSIBLE_SOLUTIONS ):
     runsToFindSol = 0
-    start_time = time.time()
-
+    
     #create new and scrap old evo comp rslts if sol not found
     while(True):
         runsToFindSol += 1
@@ -93,7 +94,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             
             #if added individual is a sol
             if(individualFitness == 0):
-                solutions.add(individual)
+                solutions.add(tuple(individual))
             
         #sort in ascending order by fitness (low/good to high/bad)
         populationFitness.sort(key=getFitness)
@@ -147,7 +148,8 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
                 
                 #if fitness of child is 0
                 if(EvalFitness(child) == 0):
-                    solutions.add(child)
+                    #add child as a tuple to sols set
+                    solutions.add(tuple(child))
                 
             SurvivalReplacement(populationFitness, children)
             
@@ -160,7 +162,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         
         #if zero fitness reached so sol found
         if( bestFitnessData[EVOLVE_ITERATIONS-1] == 0 ):
-            print("it took " + str(runsToFindSol) + " runs to find a solution")
+            #print("it took " + str(runsToFindSol) + " runs to find a solution")
             #exit loop
             break
         
@@ -197,6 +199,9 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         plt.ylabel('Worst Fitness')
         plt.xlabel('Iteration')
         plt.show()
+
+print("All " + str( len(solutions) ) + " solutions: " + str(solutions) + " found in " 
+      + str( time.time() - start_time ) + " seconds.")
 
 """
 #t1 = numpy.arange(0, DESIRED_SOLUTIONS)
