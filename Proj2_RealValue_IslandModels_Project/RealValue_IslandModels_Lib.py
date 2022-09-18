@@ -322,9 +322,8 @@ def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.nd
     xpoint = random.randrange(1,num_of_traits-1) #don't want at very beginning or end bc don't wanna copy parents
     
     #take 1 point crossover
-    child1[:xpoint] = parent1[:xpoint] + parent2[xpoint:]
-    child2[:xpoint] = parent2[:xpoint] + parent1[xpoint:]
-
+    child1 = numpy.concatenate( (parent1[:xpoint], parent2[xpoint:]) )
+    child2 = numpy.concatenate( (parent2[:xpoint], parent1[xpoint:]) )
     #place childs into children arr
     children[0] = child1
     children[1] = child2

@@ -73,16 +73,6 @@ individual[6] = 3
 individual[7] = 0
 indivFitness = EvalFitness(functionToOptimize=GA_Functions.Spherical, individual=individual)
 
-individual[0] = 0
-individual[1] = 0
-individual[2] = 0
-individual[3] = 0
-individual[4] = 0
-individual[5] = 0
-individual[6] = 0
-individual[7] = 0
-indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens shouldn't be threatened)
-
 #endregion test eval of fitness
 
 #sol number
@@ -117,7 +107,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #walk thru each individual in pop
             for i in range(0, POPULATION_SIZE):
                 individual = population[i]
-                individualFitness = EvalFitness(individual)
+                individualFitness = EvalFitness(GA_Functions.Spherical, individual)
                 
                 #store individual w/ their fitness data
                 populationFitness[i] = IndividualFitness( individual, individualFitness )
@@ -184,7 +174,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
                     
                     popIndex += 1
                     
-            assert popIndex != POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
+            assert popIndex == POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
             
             #print("asdfs %d" % j)
             
