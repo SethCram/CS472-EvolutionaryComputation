@@ -68,7 +68,7 @@ indivFitness = EvalFitness(functionToOptimize=GA_Functions.Spherical, individual
 
 #sol number
 solNumber = 0
- 
+
 #loop thru each function and their bounds
 for functionEnum, functionBounds in functionBoundsDict.items():
     

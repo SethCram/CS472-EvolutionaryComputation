@@ -72,7 +72,7 @@ functionBoundsDict = {
     GA_Functions.Rastrigin: (-5.12, 5.12),
     GA_Functions.Schwefel2: (-512.03, 511.97),
     GA_Functions.Ackley: (-30, 30),
-    GA_Functions.Griewangk: (-600, 600)
+    GA_Functions.Griewangk: (-600, 600) #currently failing at population indexing/creating?
 }
 
 #region Creation Functs
@@ -231,7 +231,7 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
         #go 1 to num_of_traits inclusive
         for i in range(1,num_of_traits+1):
             #cache curr trait
-            currTrait = individual[i]
+            currTrait = individual[i-1]
             
             #take the product over the individual's traits
             prodOfCosines *= numpy.cos(currTrait/numpy.sqrt(i))
