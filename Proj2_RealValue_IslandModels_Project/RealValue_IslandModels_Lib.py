@@ -47,6 +47,12 @@ class Function_Bounds_Pairings():
     Ackley = (-30, 30)
     Griewangk = (-600, 600)
 """
+
+#init unchanging constants
+POPULATION_SIZE = 100
+INDIVIDUALS_NUMBER_OF_TRAITS = 8
+POSSIBLE_SOLUTIONS = 1
+GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
     
 class GA_Functions(Enum):
     """
@@ -58,6 +64,16 @@ class GA_Functions(Enum):
     Schwefel2 = 3
     Ackley = 4
     Griewangk = 5
+    
+#dictionary of funct-domain bounds pairings
+functionBoundsDict = { 
+    GA_Functions.Spherical: (-5.12, 5.12),
+    GA_Functions.Rosenbrock: (-2.048, 2.048),
+    GA_Functions.Rastrigin: (-5.12, 5.12),
+    GA_Functions.Schwefel2: (-512.03, 511.97),
+    GA_Functions.Ackley: (-30, 30),
+    GA_Functions.Griewangk: (-600, 600)
+}
 
 #region Creation Functs
 

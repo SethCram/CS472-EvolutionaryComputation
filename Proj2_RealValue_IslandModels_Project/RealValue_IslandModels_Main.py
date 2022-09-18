@@ -34,12 +34,6 @@ import time
 from RealValue_IslandModels_Lib import *
 import matplotlib.pyplot as plt
 import numpy
-
-#init unchanging constants
-POPULATION_SIZE = 100
-INDIVIDUALS_NUMBER_OF_TRAITS = 8
-POSSIBLE_SOLUTIONS = 1
-GENERATIONS_PER_RUN = 100
     
 #init space for arrays
 
@@ -60,7 +54,7 @@ SHOW_FITNESS_DATA = False
 #Sets cannot have two items with the same value.
 solutions = set()
 
-#region test eval of fitness
+#region test region
 #init arr w/ None
 individual = numpy.array( [None] * INDIVIDUALS_NUMBER_OF_TRAITS )
 individual[0] = 5
@@ -73,22 +67,12 @@ individual[6] = 3
 individual[7] = 0
 indivFitness = EvalFitness(functionToOptimize=GA_Functions.Spherical, individual=individual)
 
-#endregion test eval of fitness
+#endregion test region
 
 #sol number
 solNumber = 0
 
 start_time = time.time()
-
-#dictionary of funct-domain bounds pairings
-functionBoundsDict = { 
-    GA_Functions.Spherical: (-5.12, 5.12),
-    GA_Functions.Rosenbrock: (-2.048, 2.048),
-    GA_Functions.Rastrigin: (-5.12, 5.12),
-    GA_Functions.Schwefel2: (-512.03, 511.97),
-    GA_Functions.Ackley: (-30, 30),
-    GA_Functions.Griewangk: (-600, 600)
-}
 
 #for k in range(0, DESIRED_SOLUTIONS):
 while( len(solutions) < POSSIBLE_SOLUTIONS ):
@@ -181,7 +165,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #if( bestFitnessData[j] == 0 ):
             #    print("Best fitness of zero reached for configuration " + str( populationFitness ) )
         
-        #print("run " + str(runsToFindSol) + " resulted in a best fitness of " + str(bestFitnessData[EVOLVE_ITERATIONS-1]))
+        print("run " + str(runsToFindSol) + " resulted in a best fitness of " + str(bestFitnessData[GENERATIONS_PER_RUN-1]))
         
         #if zero fitness reached so sol found
         if( bestFitnessData[GENERATIONS_PER_RUN-1] == 0 ):
