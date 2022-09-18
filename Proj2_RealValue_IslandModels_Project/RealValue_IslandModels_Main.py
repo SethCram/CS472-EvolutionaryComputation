@@ -111,24 +111,24 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         
         #create new population
         population = CreatePopulation(functionBounds=functionBoundsDict[GA_Functions.Spherical], population_size=100, individuals_num_of_traits=8)
-        
-        #walk thru each individual in pop
-        for i in range(0, POPULATION_SIZE):
-            individual = population[i]
-            individualFitness = EvalFitness(individual)
-            
-            #store individual w/ their fitness data
-            populationFitness[i] = IndividualFitness( individual, individualFitness )
-            
-            #if added individual is a sol
-            if(individualFitness == 0):
-                solutions.add(tuple(individual))
-            
-        #sort in ascending order by fitness (low/good to high/bad)
-        populationFitness.sort(key=getFitness)
 
         #run for desired evolution iterations
         for j in range(0, GENERATIONS_PER_RUN ):
+
+            #walk thru each individual in pop
+            for i in range(0, POPULATION_SIZE):
+                individual = population[i]
+                individualFitness = EvalFitness(individual)
+                
+                #store individual w/ their fitness data
+                populationFitness[i] = IndividualFitness( individual, individualFitness )
+                
+                #if added individual is a sol
+                if(individualFitness == 0):
+                    solutions.add(tuple(individual))
+                
+            #sort in ascending order by fitness (low/good to high/bad)
+            populationFitness.sort(key=getFitness)
 
             #print(populationFitness)
 
@@ -140,7 +140,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             for i in range(0, POPULATION_SIZE):
                 #take the fitness sum
                 fitnessSum += populationFitness[i].fitness            
-            avgFitnessData[j] = int( fitnessSum/POPULATION_SIZE )
+            avgFitnessData[j] =  fitnessSum/POPULATION_SIZE 
             
             #attempt at trait tracking
             
@@ -164,22 +164,23 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #    parents = BreedSelection(populationFitness, displayDistributionGraph=True)
             #else:
                 #select 2 parents from pop
-            parents = BreedSelection(populationFitness)
-
-            #crossover breed parents to get children
-            children = CrossoverBreed(parents[0].individual, parents[1].individual)
-
-            #walk thru children
-            for child in children:
-                #mutate child 
-                Mutate(child)
                 
-                #if fitness of child is 0
-                if(EvalFitness(child) == 0):
-                    #add child as a tuple to sols set
-                    solutions.add(tuple(child))
-                
-            SurvivalReplacement(populationFitness, children)
+            #Create a whole new pop from prev pop as parents
+            for k in range(0, int(POPULATION_SIZE/2)):
+                parents = BreedSelection(populationFitness)
+
+                #crossover breed parents to get children
+                children = CrossoverBreed(parents[0].individual, parents[1].individual)
+
+                #walk thru children
+                for child in children:
+                    #mutate child 
+                    Mutate(child)
+                    
+                    #if fitness of child is 0
+                    if(EvalFitness(child) == 0):
+                        #add child as a tuple to sols set
+                        solutions.add(tuple(child))
             
             #print("asdfs %d" % j)
             

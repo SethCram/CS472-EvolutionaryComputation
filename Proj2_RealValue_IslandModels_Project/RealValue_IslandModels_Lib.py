@@ -243,9 +243,6 @@ def getFitness( individual: IndividualFitness ) -> int:
 
 #region Breeding Functs
 
-"""
-Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
-"""
 def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
@@ -310,29 +307,23 @@ Create a crossover function, which will accept two individuals (parents), and cr
 """
 def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
     """
-    Assumes both parents have the same number of traits (queens).
-    A variation on 1-point crossover.
+    A 1-point crossover.
+    Assumes both parents have the same number of traits.
     """
     
     num_of_traits = len(parent1)
     
-    outsideRangeDefault = 20
-    
     #init child arrs
-    child1 = numpy.full( num_of_traits, outsideRangeDefault, dtype=int ) #need to be below 0 or above 7
-    child2 = numpy.full( num_of_traits, outsideRangeDefault, dtype=int )
+    child1 = numpy.empty( num_of_traits, dtype=float ) #need to be below 0 or above 7
+    child2 = numpy.empty( num_of_traits, dtype=float )
     children = numpy.array( [None] * 2 )
     
     #crossover point
-    xpoint = random.randrange(1,7) #don't want at very beginning or end bc don't wanna copy parents
+    xpoint = random.randrange(1,num_of_traits-1) #don't want at very beginning or end bc don't wanna copy parents
     
-    #copy over start of each parent
-    child1[:xpoint] = parent1[:xpoint]
-    child2[:xpoint] = parent2[:xpoint]
-    
-    #get tails for each child from other parent
-    OnePointTailCrossover( child=child1, xpoint=xpoint, parent=parent2, outsideRangeDefault=outsideRangeDefault )
-    OnePointTailCrossover( child=child2, xpoint=xpoint, parent=parent1, outsideRangeDefault=outsideRangeDefault)
+    #take 1 point crossover
+    child1[:xpoint] = parent1[:xpoint] + parent2[xpoint:]
+    child2[:xpoint] = parent2[:xpoint] + parent1[xpoint:]
 
     #place childs into children arr
     children[0] = child1
@@ -340,105 +331,82 @@ def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.nd
 
     return children
 
-def OnePointTailCrossover( parent: numpy.ndarray, xpoint: int, child: numpy.ndarray, outsideRangeDefault: int) -> None:
-    """A 1-point crossover performed with the given parent and child at the xpoint. 
-        No individual can have more than one of the same trait.
-
-    Args:
-        parent (numpy.ndarray): Parent the child's traits are taken from.
-        xpoint (int): Crossover point the tail starts on (inclusive).
-        child (numpy.ndarray): Child needing its tail filled.
-        outsideRangeDefault (int): Value for error checking to make sure child filled.
-    """
-    
-    num_of_traits = len(parent)
-    
-    parentIndexIncrs = 0
-
-    #fill in each child's tail w/ the other parent
-    for tailIndex in range(xpoint, num_of_traits):
-        
-        #if start of for loop/child filling
-        if(tailIndex == xpoint):
-            #start parent index at tail index
-            parentIndex = tailIndex
-        
-        #wait till full loop around
-        while( parentIndexIncrs < num_of_traits ):
-        
-            parentCandidateTrait = parent[parentIndex] 
-            
-            #look for nxt parent index
-            parentIndex += 1
-            parentIndexIncrs += 1
-            
-            #if parent index reached the end
-            if(parentIndex == num_of_traits):
-                #wrap it around
-                parentIndex = 0
-            
-            #if trait not in child already
-            if( parentCandidateTrait not in child ):
-                #copy it over
-                child[tailIndex] = parentCandidateTrait
-                #move onto nxt child trait that needs filling
-                break
-    
-    #make sure all vals in child replaced
-    assert outsideRangeDefault not in child, "Not all traits in child replaced by a parent trait: {}".format(child)
-    
-    return
-
 #endregion Breeding Functs
 
 """
 Create a mutation function, which will have a small probability of changing the values of the new children.
 """
-def Mutate( child: numpy.ndarray ) -> bool:
+def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
     """
     Not a guaranteed mutation. 
-    Mutation will occur in only 1 in every (2*number of traits of child) passed to this function.
+    Mutation will occur in only 1 in every number of traits of child passed to this function.
     Peforms mutation through swapping 2 random traits of passed in child.  
     Returns true if mutation done.
     Returns false if mutation not done.
     """
-    num_of_traits = len(child)
     
-    #mutate 1 in every (2*number of traits of child)
-    mutationChance = random.randint(1, num_of_traits * 2 )
+    #cache useful vals
+    num_of_traits = len(child)
+    lower_bound, upper_bound = functionBounds
+    
+    #mutate every 1 / number of traits of child
+    mutationChance = random.randint(1, num_of_traits )
     if( mutationChance == 1 ):
+        #decide what child trait being mutated + cache it
+        indexBeingMutated = random.randint(0, num_of_traits-1)
+        traitBeingMutated = child[indexBeingMutated]
         
-        traitBeingSwapped= random.randint(0, num_of_traits-1)
-        otherTraitBeingSwapped= random.randint(0, num_of_traits-1)
-        childTraitBeingMutated = child[traitBeingSwapped]
+        traitChangePercentage = 10
         
-        #apply new traits thru swapping
-        child[traitBeingSwapped] = child[otherTraitBeingSwapped]
-        child[otherTraitBeingSwapped] = childTraitBeingMutated
+        #change based on bounds
+        boundsChange = abs(upper_bound) + abs(lower_bound)
+        
+        #use a percentage of the change in bounds as the trait change
+        traitChange = boundsChange * (traitChangePercentage / 100)
+        
+        #reuse gen'd rando number to decide whether add or subtr
+        # reduces tot number of rando calls by 1
+        
+        #if lower trait range
+        if( indexBeingMutated < int(num_of_traits/2) ):
+            #add trait change
+            traitBeingMutated += traitChange
+        #if higher trait range
+        else:
+            #subtr trait change
+            traitBeingMutated -= traitChange
+        
+        #remutate until the trait being mutated is within domain bounds
+        while( traitBeingMutated < lower_bound or traitBeingMutated > upper_bound ):
+            
+            #reset trait being mutated
+            traitBeingMutated = child[indexBeingMutated]
+            
+            #recalc trait change as half as big
+            traitChangePercentage /= 2 
+            traitChange = boundsChange * (traitChangePercentage / 100)
+            
+            #reroll whether adding or subtracting
+            if( random.randint(0,1) == 1):
+                #add trait change
+                traitBeingMutated += traitChange
+            else:
+                #subtr trait change
+                traitBeingMutated -= traitChange
+        
+        """
+        #clamp new trait to within bounds
+        if( traitBeingMutated < lower_bound):
+            traitBeingMutated = lower_bound
+        elif( traitBeingMutated > upper_bound ):
+            traitBeingMutated = upper_bound
+        """
+        
+        #apply new trait
+        child[indexBeingMutated] = traitBeingMutated
         
         #ret true bc mutated
         return True
     
     #return false bc didn't mutate
     return False      
-
-"""
-Create a survival function which removes the two worst individuals from the population, and then puts the new children into the population.
-"""
-def SurvivalReplacement( populationFitness: list, children: numpy.ndarray ) -> None:
-    """
-    Evaluates the newly created childrens' fitness, then uses an insertion sort to add them to the list.
-    Assumes population array is sorted in ascending fitness order (low/good to high/bad).
-
-    Args:
-        population (list): list of individual fitness objects
-        children (numpy.ndarray): array of two children individual fitness objects
-    """
-    
-    for child in children:
-        childFitness = IndividualFitness(child, EvalFitness(child))
-        
-        #insertion sort to pop data and pop
-        bisect.insort(populationFitness, childFitness, key=getFitness)
-    
-    return
