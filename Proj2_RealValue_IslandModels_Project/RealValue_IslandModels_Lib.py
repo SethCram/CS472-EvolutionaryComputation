@@ -28,6 +28,7 @@ Project Requirements:
     Write a paper similar to the papers in project 1, compare your results of GAs and GAs with island models.
 """
 
+from enum import Enum
 import random
 from secrets import randbelow
 import numpy
@@ -36,58 +37,73 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 import bisect
 
+class GA_Function(Enum):
+    """
+    A Python enum to represent what GA function is being optimized.
+    """
+    Spherical = 0
+    Rosenbrock = 1
+    Rastrigin = 2
+    Schwefel2 = 3
+    Ackley = 4
+    Griewangk = 5
+
 #region Creation Functs
 
-def CreateRandomIndividual( board_size_x: int, board_size_y: int) -> numpy.ndarray:
+def CreateRandomIndividual( num_of_traits: int, lower_bound_inclusive: float, upper_bound_inclusive: float) -> numpy.ndarray:
     """
-    Creates an individual with random traits.
-    Eight queens prob traits = queens' positions.
-    Created queens can't occupy already occupied spaces.
+    Args:
+        num_of_traits (int): Creates an individual with passed in number of random traits.
+        lower_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
+        upper_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
+
+    Returns:
+        numpy.ndarray: Individual containing the requested number of genes inclusively between the specified ranges.
     """
     
     #init arr w/ enough space
-    individual = numpy.empty( board_size_x, dtype=int )
+    individual = numpy.empty( num_of_traits, dtype=float )
     
     #walk thru each trait of individual
-    for traitIndex in range(0, board_size_x):
+    for traitIndex in range(0, num_of_traits):
         #find new trait using random coords within bounds
-        newTrait = randbelow(board_size_y)
-    
-        #verify that created position is unique and doesn't occupy another Queen's space
-        
-        checkIndex = 0
-        
-        #if not first trait
-        if( traitIndex != 0):
-            #walk thru all already created traits
-            while( checkIndex < traitIndex):
-                #if another queen shares the same spot
-                if( newTrait == individual[checkIndex] ):
-                    #fill that individual's trait using random x and y coords
-                    newTrait = randbelow(board_size_y)
-                    #restart duplicate check
-                    checkIndex = 0
-                #if another queen doesn't share same spot
-                else:
-                    #move onto next queen
-                    checkIndex += 1
+        newTrait = random.uniform(lower_bound_inclusive, upper_bound_inclusive)
         
         #fill that individual's trait
         individual[traitIndex] = newTrait
         
     return individual
 
-def CreatePopulation(population_size: int, board_size_x: int, board_size_y: int) -> numpy.ndarray:
+def CreatePopulation( functionToOptimize: GA_Function, population_size: int, individuals_num_of_traits: int) -> numpy.ndarray:
     """
-    Create population with random individuals using the given params.
+    Args:
+        functionToOptimize (GA_Function): Used to determine domain of input data.
+        population_size (int): Determines how many random individuals created.
+        individuals_num_of_traits (int): Tells how many traits each individual should have.
+
+    Returns:
+        numpy.ndarray: Population created.
     """
     
     #init pop
     population = numpy.array( [None] * population_size )
     
+    #dictionary of funct-domain bounds pairings
+    functionBoundsDict = { 
+        GA_Function.Spherical: (-5.12, 5.12),
+        GA_Function.Rosenbrock: (-2.048, 2.048),
+        GA_Function.Rastrigin: (-5.12, 5.12),
+        GA_Function.Schwefel2: (-512.03, 511.97),
+        GA_Function.Ackley: (-30, 30),
+        GA_Function.Griewangk: (-600, 600)
+    }
+    
+    #use dict to determin lower + upper bounds
+    lower_bound, upper_bound = functionBoundsDict[functionToOptimize]
+    
     #populate every member of population
     for individualIndex in range(0, population_size):
-        population[individualIndex] = CreateRandomIndividual( board_size_x, board_size_y)
+        population[individualIndex] = CreateRandomIndividual( individuals_num_of_traits, lower_bound, upper_bound)
     
     return population
 
@@ -364,23 +380,18 @@ Create a survival function which removes the two worst individuals from the popu
 """
 def SurvivalReplacement( populationFitness: list, children: numpy.ndarray ) -> None:
     """
-    Evaluates the newly created childrens' fitness, then uses an insertion sort to add them to the list, and cut out the last two elements.
+    Evaluates the newly created childrens' fitness, then uses an insertion sort to add them to the list.
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
 
     Args:
         population (list): list of individual fitness objects
         children (numpy.ndarray): array of two children individual fitness objects
     """
-    #cache lengths of pop and children
-    population_size = len(populationFitness)
     
     for child in children:
         childFitness = IndividualFitness(child, EvalFitness(child))
         
         #insertion sort to pop data and pop
         bisect.insort(populationFitness, childFitness, key=getFitness)
-    
-    #cut out two worst fitness individuals
-    populationFitness[:] = populationFitness[0:population_size]
     
     return
