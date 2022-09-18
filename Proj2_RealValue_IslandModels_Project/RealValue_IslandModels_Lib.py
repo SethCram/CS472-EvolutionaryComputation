@@ -173,7 +173,7 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
             #cache curr trait
             currTrait = individual[i]
             #calc new rslt and add to old one
-            rslt += ( 100 * ( (rslt[i+1] - currTrait**2)**2 ) + (currTrait-1)**2 )
+            rslt += ( 100 * ( (individual[i+1] - currTrait**2)**2 ) + (currTrait-1)**2 )
     
     elif( functionToOptimize == GA_Functions.Rastrigin):
         #init w/ added val outside of summation
