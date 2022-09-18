@@ -27,6 +27,7 @@ Project Requirements:
     Write a paper similar to the papers in project 1, compare your results of GAs and GAs with island models.
 """
 
+from telnetlib import GA
 import time
 
 #import all functs from 8 queens functs
@@ -37,12 +38,9 @@ import numpy
 #init unchanging constants
 POPULATION_SIZE = 100
 NUMBER_OF_TRAITS = 8
-BOARD_SIZE_X = 8
-BOARD_SIZE_Y = 8
-EVOLVE_ITERATIONS = 1000
-CHILDREN_PER_ITERATION = 2 #same as number of replacements per iteration
 POSSIBLE_SOLUTIONS = 92
-#DESIRED_SOLUTIONS = 5
+DESIRED_SOLUTIONS = 5
+GENERATIONS_PER_RUN = 100
     
 #init space for arrays
 
@@ -54,9 +52,9 @@ populationFitness = [None] * POPULATION_SIZE
 #elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
 #elapsedTimeToFindSol = []
 
-worstFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
-bestFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
-avgFitnessData = numpy.empty( EVOLVE_ITERATIONS, dtype=int )
+worstFitnessData = numpy.empty(GENERATIONS_PER_RUN, dtype=float )
+bestFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
+avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
 
 SHOW_FITNESS_DATA = False
 
@@ -64,7 +62,7 @@ SHOW_FITNESS_DATA = False
 solutions = set()
 
 #region test eval of fitness
-"""#init arr w/ None
+#init arr w/ None
 individual = numpy.array( [None] * NUMBER_OF_TRAITS )
 individual[0] = 5
 individual[1] = 6
@@ -74,7 +72,7 @@ individual[4] = 1
 individual[5] = 2
 individual[6] = 3
 individual[7] = 0
-indivFitness = EvalFitness(individual)
+indivFitness = EvalFitness(functionToOptimize=GA_Functions.Spherical, individual=individual)
 
 individual[0] = 0
 individual[1] = 0
@@ -85,13 +83,23 @@ individual[5] = 0
 individual[6] = 0
 individual[7] = 0
 indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens shouldn't be threatened)
-"""
+
 #endregion test eval of fitness
 
 #sol number
 k = 0
 
 start_time = time.time()
+
+#dictionary of funct-domain bounds pairings
+functionBoundsDict = { 
+    GA_Functions.Spherical: (-5.12, 5.12),
+    GA_Functions.Rosenbrock: (-2.048, 2.048),
+    GA_Functions.Rastrigin: (-5.12, 5.12),
+    GA_Functions.Schwefel2: (-512.03, 511.97),
+    GA_Functions.Ackley: (-30, 30),
+    GA_Functions.Griewangk: (-600, 600)
+}
 
 #for k in range(0, DESIRED_SOLUTIONS):
 while( len(solutions) < POSSIBLE_SOLUTIONS ):
@@ -102,7 +110,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         runsToFindSol += 1
         
         #create new population
-        population = CreatePopulation(POPULATION_SIZE, BOARD_SIZE_X, BOARD_SIZE_Y)
+        population = CreatePopulation(functionBounds=functionBoundsDict[GA_Functions.Spherical], population_size=100, individuals_num_of_traits=8)
         
         #walk thru each individual in pop
         for i in range(0, POPULATION_SIZE):
@@ -120,7 +128,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         populationFitness.sort(key=getFitness)
 
         #run for desired evolution iterations
-        for j in range(0, EVOLVE_ITERATIONS ):
+        for j in range(0, GENERATIONS_PER_RUN ):
 
             #print(populationFitness)
 
@@ -181,7 +189,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
         #print("run " + str(runsToFindSol) + " resulted in a best fitness of " + str(bestFitnessData[EVOLVE_ITERATIONS-1]))
         
         #if zero fitness reached so sol found
-        if( bestFitnessData[EVOLVE_ITERATIONS-1] == 0 ):
+        if( bestFitnessData[GENERATIONS_PER_RUN-1] == 0 ):
             #print("it took " + str(runsToFindSol) + " runs to find a solution")
             #exit loop
             break
@@ -194,7 +202,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
     #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
     
     if(SHOW_FITNESS_DATA):
-        t = numpy.arange(0, EVOLVE_ITERATIONS)
+        t = numpy.arange(0, GENERATIONS_PER_RUN)
         
         plt.rcParams.update({'font.size': 22})
         plt.plot(t, bestFitnessData) 

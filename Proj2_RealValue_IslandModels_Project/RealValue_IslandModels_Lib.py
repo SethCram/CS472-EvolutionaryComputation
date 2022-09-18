@@ -28,6 +28,7 @@ Project Requirements:
     Write a paper similar to the papers in project 1, compare your results of GAs and GAs with island models.
 """
 
+#from enum import Enum
 from enum import Enum
 import random
 from secrets import randbelow
@@ -37,7 +38,17 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 import bisect
 
-class GA_Function(Enum):
+""""
+class Function_Bounds_Pairings():
+    Spherical = (-5.12, 5.12)
+    Rosenbrock = (-2.048, 2.048)
+    Rastrigin = (-5.12, 5.12)
+    Schwefel2 = (-512.03, 511.97)
+    Ackley = (-30, 30)
+    Griewangk = (-600, 600)
+"""
+    
+class GA_Functions(Enum):
     """
     A Python enum to represent what GA function is being optimized.
     """
@@ -74,7 +85,7 @@ def CreateRandomIndividual( num_of_traits: int, lower_bound_inclusive: float, up
         
     return individual
 
-def CreatePopulation( functionToOptimize: GA_Function, population_size: int, individuals_num_of_traits: int) -> numpy.ndarray:
+def CreatePopulation( functionBounds: tuple, population_size: int, individuals_num_of_traits: int) -> numpy.ndarray:
     """
     Args:
         functionToOptimize (GA_Function): Used to determine domain of input data.
@@ -88,6 +99,7 @@ def CreatePopulation( functionToOptimize: GA_Function, population_size: int, ind
     #init pop
     population = numpy.array( [None] * population_size )
     
+    """
     #dictionary of funct-domain bounds pairings
     functionBoundsDict = { 
         GA_Function.Spherical: (-5.12, 5.12),
@@ -97,9 +109,11 @@ def CreatePopulation( functionToOptimize: GA_Function, population_size: int, ind
         GA_Function.Ackley: (-30, 30),
         GA_Function.Griewangk: (-600, 600)
     }
-    
     #use dict to determin lower + upper bounds
     lower_bound, upper_bound = functionBoundsDict[functionToOptimize]
+    """
+    
+    lower_bound, upper_bound = functionBounds
     
     #populate every member of population
     for individualIndex in range(0, population_size):
@@ -111,75 +125,108 @@ def CreatePopulation( functionToOptimize: GA_Function, population_size: int, ind
 
 #region Fitness Functs and Class
 
-"""
-Create a fitness function which will evaluate how 'fit' an individual is by counting up the number of queens attacking each other (lower is more fit). 
-"""
-def EvalFitness( queen_positions: numpy.ndarray ) -> int:
+def SqrdSum( inputArr: numpy.ndarray ) -> float:
     """
-    Evaluates fitness of a single individual.
-    Queens can't occupy the same space.
+    Returns the elly-wise squared sum of the arr.
     """
-    collisions = 0
+    return sum(inputArr**2)
+
+def CosOfTwoPiTrait( trait: float) -> float:
+    return numpy.cos(2*numpy.pi*trait)
+
+def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) -> int:
+    """
+    Evaluates fitness of a single individual according to the GA function passed in.
+    Optimal results value is 0. Further from a 0 result means higher fitness.
+    """
     
-    numOfQueens = len( queen_positions )
+    num_of_traits = len( individual )
     
-    #walk thru every queen on board
-    for i in range(0, numOfQueens):
+    if( functionToOptimize == GA_Functions.Spherical):
+        #walk thru each trait in the individual
+        #for trait in individual:
         
-        #for each queen, use some stats
-        checkingQueen = queen_positions[i]
-        diag1 = False
-        diag2 = False
-        diag3 = False
-        diag4 = False
+        rslt = SqrdSum(individual)
         
-        #for every queen on board, compare it to every other queen on the board
-        for j in range(0, numOfQueens):
+    elif( functionToOptimize == GA_Functions.Rosenbrock):
+        
+        rslt = 0
+        
+        #leave out last elly
+        for i in range(0,num_of_traits-1):
+            #cache curr trait
+            currTrait = individual[i]
+            #calc new rslt and add to old one
+            rslt += ( 100 * ( (rslt[i+1] - currTrait**2)**2 ) + (currTrait-1)**2 )
+    
+    elif( functionToOptimize == GA_Functions.Rastrigin):
+        #init w/ added val outside of summation
+        rslt = 10 * num_of_traits
+        
+        for i in range(0,num_of_traits):
+            #cache curr trait
+            currTrait = individual[i]
+            #calc new rslt and add to old one
+            rslt += ( currTrait**2 - 10*CosOfTwoPiTrait(currTrait) )
+        
+        #make sure fitness is positive
+        rslt = abs(rslt)
+        
+    elif( functionToOptimize == GA_Functions.Schwefel2):
+        #init w/ added val outside of summation
+        rslt = 418.9829 * num_of_traits
+        
+        for i in range(0,num_of_traits):
+            #cache curr trait
+            currTrait = individual[i]
+            #calc new rslt and add to old one
+            rslt += currTrait*numpy.sin(numpy.sqrt(abs(currTrait)))
+        
+        #make sure fitness is positive
+        rslt = abs(rslt)
+        
+    elif( functionToOptimize == GA_Functions.Ackley):
+        #init w/ added val outside of summation
+        rslt = 20 + numpy.e
+        
+        cosOfTwoPiTraitSum = 0
+        
+        for i in range(0,num_of_traits):
+            #cache curr trait
+            currTrait = individual[i]
+            #take summation of a custom funct
+            cosOfTwoPiTraitSum += CosOfTwoPiTrait(currTrait)
             
-            #if not comparing the same queen 
-            if( i != j ):
-                               
-                otherQueen = queen_positions[j]
-                
-                #find the x,y diffs tween the two queens
-                # change in x is index difference bc the col pos is index
-                changeInX, changeInY = (j - i, otherQueen - checkingQueen)
-                
-                #store state of the x,y queen changes
-                posChangeInX = changeInX > 0
-                negChangeInX = changeInX < 0
-                posChangeInY = changeInY > 0
-                negChangeInY = changeInY < 0
-                
-                #calc positive slope
-                slope = abs( changeInY/changeInX )
-                
-                #if diagonal collision
-                if( slope == 1 ):
-                    #if 1st quadrant diagonal collision
-                    if(posChangeInX and posChangeInY and diag1 == False):
-                        collisions += 1
-                        diag1 = True
-                    #if 2nd quadrant diagonal collision
-                    elif( negChangeInX and posChangeInY and diag2 == False ):
-                        collisions += 1
-                        diag2 = True
-                    #if 3rd quadrant diagonal collision
-                    elif( negChangeInX and negChangeInY and diag3 == False ):
-                        collisions += 1
-                        diag3 = True
-                    #if 4th quadrant diagonal collision
-                    elif( posChangeInX and negChangeInY and diag4 == False ):
-                        collisions += 1
-                        diag4 = True
-                
-                #make sure 2 queens aren't horizontal and vertical of one another
-                assert (changeInX != 0 and changeInY != 0) == True, "Queen {} and {} are vertical or horizontal of one another.".format(j, i)
+        rslt -= ( 
+            20 * numpy.exp( -0.2*numpy.sqrt((1/num_of_traits)*SqrdSum(individual)) ) 
+            - numpy.exp( (i/num_of_traits)*cosOfTwoPiTraitSum ) 
+        )
+        
+        #make sure fitness is positive
+        rslt = abs(rslt)
+        
+    elif( functionToOptimize == GA_Functions.Griewangk):
+        rslt = 1
+        
+        rslt += sum( (individual**2) / 4000 )
+        
+        prodOfCosines = 1
+        
+        #go 1 to num_of_traits inclusive
+        for i in range(1,num_of_traits+1):
+            #cache curr trait
+            currTrait = individual[i]
+            
+            #take the product over the individual's traits
+            prodOfCosines *= numpy.cos(currTrait/numpy.sqrt(i))
+        
+        rslt -= prodOfCosines    
+        
+        #make sure fitness is positive
+        rslt = abs(rslt)
     
-    #ensure num of collisions for this board isn't above the max
-    assert collisions <= (numOfQueens - 1) * 4, "More than the maximum number of collisions occurred."
-                
-    return collisions
+    #desired val is 0 so fitness should always be positive             
+    return rslt
 
 @dataclass 
 class IndividualFitness:
