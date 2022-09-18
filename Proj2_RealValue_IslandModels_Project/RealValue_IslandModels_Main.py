@@ -37,9 +37,8 @@ import numpy
 
 #init unchanging constants
 POPULATION_SIZE = 100
-NUMBER_OF_TRAITS = 8
-POSSIBLE_SOLUTIONS = 92
-DESIRED_SOLUTIONS = 5
+INDIVIDUALS_NUMBER_OF_TRAITS = 8
+POSSIBLE_SOLUTIONS = 1
 GENERATIONS_PER_RUN = 100
     
 #init space for arrays
@@ -47,7 +46,7 @@ GENERATIONS_PER_RUN = 100
 populationFitness = [None] * POPULATION_SIZE
 
 #populationHistory = numpy.empty( EVOLVE_ITERATIONS, dtype=numpy.ndarray )
-#phList = numpy.empty( NUMBER_OF_TRAITS, dtype=numpy.ndarray )
+#phList = numpy.empty( INDIVIDUALS_NUMBER_OF_TRAITS, dtype=numpy.ndarray )
 
 #elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
 #elapsedTimeToFindSol = []
@@ -63,7 +62,7 @@ solutions = set()
 
 #region test eval of fitness
 #init arr w/ None
-individual = numpy.array( [None] * NUMBER_OF_TRAITS )
+individual = numpy.array( [None] * INDIVIDUALS_NUMBER_OF_TRAITS )
 individual[0] = 5
 individual[1] = 6
 individual[2] = 7
@@ -87,7 +86,7 @@ indivFitness = EvalFitness(individual) #expecting 26 (queens behind other queens
 #endregion test eval of fitness
 
 #sol number
-k = 0
+solNumber = 0
 
 start_time = time.time()
 
@@ -148,14 +147,14 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #populationHistory[j] = population
             #phList[:] = population
             
-            #for i in range(0, NUMBER_OF_TRAITS):
+            #for i in range(0, INDIVIDUALS_NUMBER_OF_TRAITS):
                 #phList[j][i] = []
                 #copy over each individual's i'th col into this iteration's phList (each list is now a col instead of a row)
             #    phList[i] = [individual[i] for individual in populationHistory[j]]
                 #bleh = [individual[i] for individual in populationHistory[j]]
             #populationHistory[j] = phList[j]
             
-            #plt.hist(phList[0], bins = NUMBER_OF_TRAITS)
+            #plt.hist(phList[0], bins = INDIVIDUALS_NUMBER_OF_TRAITS)
             #plt.show()
 
             #if first iteration 
@@ -165,8 +164,11 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #else:
                 #select 2 parents from pop
                 
+            popIndex = 0
+                
             #Create a whole new pop from prev pop as parents
             for k in range(0, int(POPULATION_SIZE/2)):
+                #find parents
                 parents = BreedSelection(populationFitness)
 
                 #crossover breed parents to get children
@@ -175,12 +177,14 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
                 #walk thru children
                 for child in children:
                     #mutate child 
-                    Mutate(child)
+                    Mutate(functionBounds=functionBoundsDict[GA_Functions.Spherical], child=child)
+                        
+                    #add to new population (reuse old space)
+                    population[popIndex] = child
                     
-                    #if fitness of child is 0
-                    if(EvalFitness(child) == 0):
-                        #add child as a tuple to sols set
-                        solutions.add(tuple(child))
+                    popIndex += 1
+                    
+            assert popIndex != POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
             
             #print("asdfs %d" % j)
             
@@ -198,7 +202,7 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
     #elapsedTimeToFindSol[k] = time.time() - start_time
     #elapsedTimeToFindSol.append(time.time() - start_time)
     
-    k += 1
+    solNumber += 1
     
     #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
     
