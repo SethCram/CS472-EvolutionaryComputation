@@ -3,13 +3,14 @@ import unittest
 
 from RealValue_IslandModels_Lib import *
 
-class TestStringMethods(unittest.TestCase):
+class TestCreationMethods(unittest.TestCase):
 
     def test_IndividualCreation(self):
         """
         Tests individual creation function once for every function.
-        Ensures each generated trait is a 64 bit numpy float 
-        and within the function's domain .
+        Ensures each generated trait is a 64 bit numpy float, 
+        within the function's domain,
+        and has the correct number of traits.
         """
         
         #for function in GA_Functions:
@@ -27,6 +28,12 @@ class TestStringMethods(unittest.TestCase):
                 upper_bound_inclusive=upper_bound
             )
             
+            #trait number check
+            self.assertTrue(
+                len(testIndividual) == INDIVIDUALS_NUMBER_OF_TRAITS,
+                "A test trait for {} doesn't have {} traits.".format(functionEnum, INDIVIDUALS_NUMBER_OF_TRAITS) 
+            )
+            
             #walk thru individual's traits
             for testTrait in testIndividual:
                 #bounds check
@@ -42,15 +49,26 @@ class TestStringMethods(unittest.TestCase):
                 )
 
     def test_PopulationCreation(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+        """
+        Creates a population for each funct 
+        and verifies it's the right size.
+        """
+        #walk thru funct bounds dict
+        for functionEnum, functionBounds in functionBoundsDict.items():
+            #create new population
+            population = CreatePopulation(
+                functionBounds=functionBounds, 
+                population_size=POPULATION_SIZE, 
+                individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
+            )
+            
+            newPopSize = len(population)
+            
+            #pop size check
+            self.assertTrue(
+                newPopSize == POPULATION_SIZE,
+                "Size of population was changed to {} for {}.".format(newPopSize, functionEnum)
+            )
 
 if __name__ == '__main__':
     unittest.main()

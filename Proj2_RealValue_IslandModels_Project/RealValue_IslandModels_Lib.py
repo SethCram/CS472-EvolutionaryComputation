@@ -137,7 +137,7 @@ def CreatePopulation( functionBounds: tuple, population_size: int, individuals_n
     
     return population
 
-#endregion Creation Methods
+#endregion Creation Functs
 
 #region Fitness Functs and Class
 
