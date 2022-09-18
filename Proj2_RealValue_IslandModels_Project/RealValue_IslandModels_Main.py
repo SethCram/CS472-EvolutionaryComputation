@@ -162,6 +162,35 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                 #print("it took " + str(runsToFindSol) + " runs to find a solution")
                 #exit loop
                 break
+        
+        #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
+        
+        if(SHOW_FITNESS_DATA):
+            t = numpy.arange(0, GENERATIONS_PER_RUN)
+            
+            plt.rcParams.update({'font.size': 22})
+            plt.plot(t, bestFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Best Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Best Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 2)
+            plt.plot(t, avgFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Average Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Average Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 3)
+            plt.plot(t, worstFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Worst Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Worst Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
             
         #if max attempts per alg exceeded
         if(MAX_ATTEMPTS_PER_ALG <= runsToFindSol):
@@ -172,35 +201,6 @@ for functionEnum, functionBounds in functionBoundsDict.items():
         #elapsedTimeToFindSol.append(time.time() - start_time)
         
         solNumber += 1
-        
-        #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
-        
-        if(SHOW_FITNESS_DATA):
-            t = numpy.arange(0, GENERATIONS_PER_RUN)
-            
-            plt.rcParams.update({'font.size': 22})
-            plt.plot(t, bestFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Best Fitness per Iteration')
-            plt.ylabel('Best Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
-
-            #plt.subplot(3, 1, 2)
-            plt.plot(t, avgFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Average Fitness per Iteration')
-            plt.ylabel('Average Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
-
-            #plt.subplot(3, 1, 3)
-            plt.plot(t, worstFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Worst Fitness per Iteration')
-            plt.ylabel('Worst Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
 
     print(
         "All " + str( len(solutions) ) + " solutions: " + str(solutions) + " found in " 

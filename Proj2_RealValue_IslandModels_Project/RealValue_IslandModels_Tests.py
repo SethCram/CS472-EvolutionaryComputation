@@ -9,7 +9,7 @@ class TestStringMethods(unittest.TestCase):
         """
         Tests individual creation function once for every function.
         Ensures each generated trait is a 64 bit numpy float 
-         and within the function's domain .
+        and within the function's domain .
         """
         
         #for function in GA_Functions:
