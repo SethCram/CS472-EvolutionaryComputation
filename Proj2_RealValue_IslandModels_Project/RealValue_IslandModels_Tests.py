@@ -70,5 +70,26 @@ class TestCreationMethods(unittest.TestCase):
                 "Size of population was changed to {} for {}.".format(newPopSize, functionEnum)
             )
 
+    def test_EvalFitness(self):
+        """
+        Test to make sure an individual with the target input as traits 
+        results in a fitness of zero for every function.
+        """
+        
+        #walk thru funct bounds dict
+        for functionEnum, functionTargetInput in functionInputTargetDict.items():
+            
+            testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=float)
+            
+            testIndividualFitness = EvalFitness(functionEnum, testIndividual)
+            
+            errorMsg = "When evaluated with an individual of all {}, {} resulted in a fitness of {}, not zero.".format(functionTargetInput, functionEnum, testIndividualFitness)
+            
+            self.assertEqual( 
+                testIndividualFitness,
+                0,
+                errorMsg
+            )
+
 if __name__ == '__main__':
     unittest.main()

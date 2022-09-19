@@ -72,7 +72,17 @@ functionBoundsDict = {
     GA_Functions.Rastrigin: (-5.12, 5.12),
     GA_Functions.Schwefel2: (-512.03, 511.97),
     GA_Functions.Ackley: (-30, 30),
-    GA_Functions.Griewangk: (-600, 600) #currently failing at population indexing/creating?
+    GA_Functions.Griewangk: (-600, 600) 
+}
+
+#dictionary of funct-input target pairings
+functionInputTargetDict = {
+    GA_Functions.Spherical:  0,
+    GA_Functions.Rosenbrock: 1,
+    GA_Functions.Rastrigin: 0,
+    GA_Functions.Schwefel2: -420.9687,
+    GA_Functions.Ackley: 0,
+    GA_Functions.Griewangk: 0 
 }
 
 #region Creation Functs
@@ -241,7 +251,10 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
         #make sure fitness is positive
         rslt = abs(rslt)
     
-    #desired val is 0 so fitness should always be positive             
+    #desired val is 0 so should round reals down to 0 if close enough
+    
+    
+    #fitness should always be positive             
     return rslt
 
 @dataclass 
