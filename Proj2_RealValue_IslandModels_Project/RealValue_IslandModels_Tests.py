@@ -1,5 +1,31 @@
-from ast import Num
-from functools import update_wrapper
+"""
+Author: Seth Cram
+Class: Evolutionary Computation - CS472/CS572
+Project 2 - Real Valued Vector Rep and Island Models
+Due Date: 9/30/2022
+Instructions:
+    You will implement a Generational genetic algorithm to optimize 6 functions described in the link. 
+    You will also implement an island model for these genetic algorithms.
+
+    For this project we will use 6 of the functions:
+    1. Spherical
+    2. Rosenbrock
+    3. Rastrigin
+    4. Schwefel (The second one)
+    5. Ackley
+    6. Griewangk
+
+Project Requirements:
+    Create a set of GA populations and define your Island Model. Decide what migration interval and migration size. 
+    Demonstrate that your island model works by showing one GA perform selection and selecting an individual that migrated from another population. 
+    Your GAs should all use a Generational model.
+
+    Run the GAs while not using an island model, collect data on the populations noting the Best, Average, and Worst fitness.
+
+    Run the GAs while using an island model, collect data on the populations noting the Best, Average, and Worst fitness.
+
+    Write a paper similar to the papers in project 1, compare your results of GAs and GAs with island models.
+"""
 import unittest
 
 from RealValue_IslandModels_Lib import *

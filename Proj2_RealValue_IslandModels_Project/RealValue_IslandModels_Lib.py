@@ -36,7 +36,6 @@ import numpy
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
-import bisect
 
 """"
 class Function_Bounds_Pairings():
@@ -50,7 +49,7 @@ class Function_Bounds_Pairings():
 
 #init unchanging constants
 POPULATION_SIZE = 100
-INDIVIDUALS_NUMBER_OF_TRAITS = 8
+INDIVIDUALS_NUMBER_OF_TRAITS = 10
 POSSIBLE_SOLUTIONS = 1
 GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
     
