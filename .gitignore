@@ -4,3 +4,6 @@
 #ignore python cache
 **/__pycache__
 EightQueensProject/__pycache__/EightQueensFuncts.cpython-310.pyc
+
+#ignore Mac FS info
+**/.DS_store

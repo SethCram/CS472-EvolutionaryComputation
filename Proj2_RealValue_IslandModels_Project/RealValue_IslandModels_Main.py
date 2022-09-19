@@ -50,7 +50,8 @@ avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
 
 SHOW_FITNESS_DATA = True
 MAX_ATTEMPTS_PER_ALG = 1
-PARENTS_SAVED_FOR_ELITISM = 2
+
+USE_ISLAND_MODEL = True
 
 assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
 assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
