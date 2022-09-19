@@ -272,6 +272,8 @@ class TestMutateRelated(unittest.TestCase):
             ),
             "A mutation made a trait go out of bounds."
         )
+        
+#Only things left to test are fitness graphs and data sorting
             
 if __name__ == '__main__':
     unittest.main()
