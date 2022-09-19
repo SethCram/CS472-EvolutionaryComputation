@@ -28,24 +28,12 @@ Project Requirements:
     Write a paper similar to the papers in project 1, compare your results of GAs and GAs with island models.
 """
 
-#from enum import Enum
 from enum import Enum
 import random
-from secrets import randbelow
 import numpy
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
-
-""""
-class Function_Bounds_Pairings():
-    Spherical = (-5.12, 5.12)
-    Rosenbrock = (-2.048, 2.048)
-    Rastrigin = (-5.12, 5.12)
-    Schwefel2 = (-512.03, 511.97)
-    Ackley = (-30, 30)
-    Griewangk = (-600, 600)
-"""
 
 #init unchanging constants
 POPULATION_SIZE = 100
@@ -128,20 +116,6 @@ def CreatePopulation( functionBounds: tuple, population_size: int, individuals_n
     
     #init pop
     population = numpy.array( [None] * population_size )
-    
-    """
-    #dictionary of funct-domain bounds pairings
-    functionBoundsDict = { 
-        GA_Function.Spherical: (-5.12, 5.12),
-        GA_Function.Rosenbrock: (-2.048, 2.048),
-        GA_Function.Rastrigin: (-5.12, 5.12),
-        GA_Function.Schwefel2: (-512.03, 511.97),
-        GA_Function.Ackley: (-30, 30),
-        GA_Function.Griewangk: (-600, 600)
-    }
-    #use dict to determin lower + upper bounds
-    lower_bound, upper_bound = functionBoundsDict[functionToOptimize]
-    """
     
     lower_bound, upper_bound = functionBounds
     
