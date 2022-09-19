@@ -50,6 +50,10 @@ avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
 
 SHOW_FITNESS_DATA = True
 MAX_ATTEMPTS_PER_ALG = 1
+PARENTS_SAVED_FOR_ELITISM = 2
+
+assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
+assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
 #sol number
 solNumber = 0
@@ -110,17 +114,27 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                     
                 #Create a whole new pop from prev pop as parents
                 for k in range(0, int(POPULATION_SIZE/2)):
-                    #find parents
-                    parents = BreedSelection(populationFitness)
+                    
+                    #if less children than parents saved for elitism
+                    if( k < PARENTS_SAVED_FOR_ELITISM/2):
+                        #apply elitism for next 2 most fit parents
+                        children = populationFitness[k].individual, populationFitness[k+1].individual
+                    
+                    #not applying elitism
+                    else:
+                        #find parents
+                        parents = BreedSelection(populationFitness)
 
-                    #crossover breed parents to get children
-                    children = CrossoverBreed(parents[0], parents[1])
+                        #crossover breed parents to get children
+                        children = CrossoverBreed(parents[0], parents[1])
 
-                    #walk thru children
+                        #walk thru children
+                        for child in children:
+                            #mutate child 
+                            Mutate(functionBounds=functionBounds, child=child)
+                    
+                    #walk thru gen'd children
                     for child in children:
-                        #mutate child 
-                        Mutate(functionBounds=functionBounds, child=child)
-                            
                         #add to new population (reuse old space)
                         population[popIndex] = child
                         
