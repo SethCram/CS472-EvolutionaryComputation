@@ -272,6 +272,25 @@ def getFitness( individual: IndividualFitness ) -> int:
 
 #region Breeding Functs
 
+def SetupHalfNormIntDistr(pop_size: int) -> tuple:
+    """
+    The half normal integer distribution parent indices are drawn from.
+
+    Returns:
+        tuple: index range and probability funct
+    """
+    #take interval 1-100
+    x = numpy.arange(1, pop_size+1) #bc upper bound is exclusive
+    #store every number's +/-0.5
+    xU, xL = x + 0.5, x - 0.5 
+    #determine probability
+    prob = ss.halfnorm.cdf(xU, scale = 30) - ss.halfnorm.cdf(xL, scale = 30) #scale represents inner quartiles
+    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
+    #decr by 1 to find the index 0-99
+    xIndexRange = x - 1
+    
+    return xIndexRange, prob
+
 def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
@@ -282,19 +301,9 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
     #store pop size
     pop_size = len(populationFitness)
     
-    """
-    Approach 5: tried using half norm and incr'd to take interval 1-100 then subtr 1 after.
-    """
+    #Using half norm and incr'd to take interval 1-100 then subtr 1 after.
     
-    #take interval 1-100
-    x = numpy.arange(1, pop_size+1) #bc upper bound is exclusive
-    #store every number's +/-0.5
-    xU, xL = x + 0.5, x - 0.5 
-    #determine probability
-    prob = ss.halfnorm.cdf(xU, scale = 30) - ss.halfnorm.cdf(xL, scale = 30) #scale represents inner quartiles
-    prob = prob / prob.sum() # normalize the probabilities so their sum is 1
-    #decr by 1 to find the index 0-99
-    xIndexRange = x - 1
+    xIndexRange, prob = SetupHalfNormIntDistr(pop_size)
     
     #if overloaded to display distr graph
     if( displayDistributionGraph):
@@ -325,8 +334,8 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
     parent2 = populationFitness[parent2Index]
     #store parents in an array
     parentsArray = numpy.array( [None] * 2)
-    parentsArray[0] = parent1
-    parentsArray[1] = parent2
+    parentsArray[0] = parent1.individual
+    parentsArray[1] = parent2.individual
         
     #return chosen parents
     return parentsArray

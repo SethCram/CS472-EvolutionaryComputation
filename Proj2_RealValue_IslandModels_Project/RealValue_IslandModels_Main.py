@@ -51,21 +51,6 @@ avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
 SHOW_FITNESS_DATA = True
 MAX_ATTEMPTS_PER_ALG = 1
 
-#region test region
-#init arr w/ None
-individual = numpy.array( [None] * INDIVIDUALS_NUMBER_OF_TRAITS )
-individual[0] = 5
-individual[1] = 6
-individual[2] = 7
-individual[3] = 4
-individual[4] = 1
-individual[5] = 2
-individual[6] = 3
-individual[7] = 0
-indivFitness = EvalFitness(functionToOptimize=GA_Functions.Spherical, individual=individual)
-
-#endregion test region
-
 #sol number
 solNumber = 0
 
@@ -129,7 +114,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                     parents = BreedSelection(populationFitness)
 
                     #crossover breed parents to get children
-                    children = CrossoverBreed(parents[0].individual, parents[1].individual)
+                    children = CrossoverBreed(parents[0], parents[1])
 
                     #walk thru children
                     for child in children:
