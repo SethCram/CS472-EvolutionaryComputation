@@ -340,13 +340,11 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
     #return chosen parents
     return parentsArray
 
-"""
-Create a crossover function, which will accept two individuals (parents), and create two children, which should inherit from the parents.
-"""
 def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
     """
     A 1-point crossover.
     Assumes both parents have the same number of traits.
+    Returns two children contained in a numpy array.
     """
     
     num_of_traits = len(parent1)

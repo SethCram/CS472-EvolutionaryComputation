@@ -1,3 +1,4 @@
+from ast import Num
 from functools import update_wrapper
 import unittest
 
@@ -175,6 +176,68 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             self.assertGreater( afterPlottedFigures, prevPlottedFigures,
                 "Plot never generated to show Breed Selection parent index distribution."    
             )
+            
+class TestCrossoverRelated(unittest.TestCase):
+    
+    def test_NPointCrossover(self):
+        """
+        Tests n-point crossover through crossing over 2 parents 
+        and making sure all their children have traits from one of them
+        and neither of them are clones of one of their parents.
+        """
+        
+        #should repeatedly do this a number of times for verification
+    
+        parent1Val = 0
+        parent2Val = 1
+    
+        #init parent array w/ 0's
+        parent1 = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, parent1Val)
+        
+        #init parent array w/ 1's
+        parent2 = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, parent2Val)
+        
+        #create new children using parents
+        children = CrossoverBreed(parent1, parent2)
+        
+        #walk thru new children
+        for child in children:
+            """
+            #walk thru every child's traits
+            for trait in child:
+                #ensure every child's trait is one of the parents
+                self.assertTrue(
+                    trait == parent1Val or trait == parent2Val,
+                    "A child contains a trait not from either of their parents."
+                )
+            """
+            
+            #get count of each unique num gen'd
+            unique, counts = numpy.unique(child, return_counts=True)
+            
+            #pair count of each index in a dict
+            traitCountDict = dict(zip(unique, counts))
+            
+            #cache parent vals
+            parent1Vals = traitCountDict[parent1Val]
+            parent2Vals = traitCountDict[parent2Val]
+            
+            #ensure child isn't clone of either parent
+            self.assertTrue(
+                parent1Vals < INDIVIDUALS_NUMBER_OF_TRAITS
+                and parent2Vals < INDIVIDUALS_NUMBER_OF_TRAITS,
+                "This child is a clone of one of its parents."
+            )
+            
+            #ensure all child traits from one of its parents
+            self.assertTrue(
+                parent1Vals + parent2Vals == INDIVIDUALS_NUMBER_OF_TRAITS,
+                "One of the child's traits aren't from either parent."
+            )
+
+class TestMutateRelated(unittest.TestCase):
+    
+    
             
 if __name__ == '__main__':
     unittest.main()
