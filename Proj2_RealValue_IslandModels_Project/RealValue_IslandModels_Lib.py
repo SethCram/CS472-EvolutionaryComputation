@@ -250,7 +250,7 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
         #make sure fitness is positive
         rslt = abs(rslt)
     
-    #desired val is 0 so should round reals down to 0 if close enough
+    #desired val is 0 so should round reals down to 0 if close enough?
     
     
     #fitness should always be positive             

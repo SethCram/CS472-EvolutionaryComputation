@@ -107,7 +107,8 @@ class TestFitnessRelated(unittest.TestCase):
         #walk thru funct bounds dict
         for functionEnum, functionTargetInput in functionInputTargetDict.items():
             
-            testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=float)
+            #testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=float)
+            testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=numpy.float64)
             
             testIndividualFitness = EvalFitness(functionEnum, testIndividual)
             
