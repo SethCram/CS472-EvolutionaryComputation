@@ -375,7 +375,7 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
     """
     Not a guaranteed mutation. 
     Mutation will occur in only 1 in every number of traits of child passed to this function.
-    Peforms mutation through swapping 2 random traits of passed in child.  
+    Peforms mutation through increasing/decreasing the child's trait by an amount depending on the bounds.  
     Returns true if mutation done.
     Returns false if mutation not done.
     """

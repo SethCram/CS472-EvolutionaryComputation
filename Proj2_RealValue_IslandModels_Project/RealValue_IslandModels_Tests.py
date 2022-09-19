@@ -169,7 +169,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             #cache figures gen'd by matplotlib
             afterPlottedFigures = plt.get_fignums()
             
-            #close any open plots
+            #close any open plots (only works sometimes??)
             plt.close()
             
             #make sure a plot was actually displayed
@@ -237,7 +237,41 @@ class TestCrossoverRelated(unittest.TestCase):
 
 class TestMutateRelated(unittest.TestCase):
     
+    def test_Mutate(self):
+        """
+        Tests mutate function through repeatedly calling it 
+        until a mutation occures.
+        Ensures a mutation happened and it didn't 
+        cause any of the child's traits to go out of bounds.
+        """
+        
+        #should run multiple times for bounds verification
+        
+        individualToMutate = numpy.ones(INDIVIDUALS_NUMBER_OF_TRAITS)
+        
+        unMutatedIndividual = individualToMutate
+        
+        lower_bound = -1
+        upper_bound = 1
+        
+        #loop till successful mutation
+        while(Mutate((lower_bound, upper_bound), individualToMutate) == False):
+            pass
     
+        #ensure individual mutated
+        self.assertTrue( 
+            numpy.array_equal(unMutatedIndividual, individualToMutate),
+            "Individual was never mutated."
+        )
+        
+        #ensure mutation not outside of bounds
+        self.assertTrue(
+            all(
+                trait <= upper_bound and trait >= lower_bound
+                for trait in individualToMutate
+            ),
+            "A mutation made a trait go out of bounds."
+        )
             
 if __name__ == '__main__':
     unittest.main()
