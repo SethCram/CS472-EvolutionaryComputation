@@ -79,7 +79,7 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
             #cache curr trait
             currTrait = individual[i]
             #calc new rslt and add to old one
-            rslt += currTrait*numpy.sin(numpy.sqrt(abs(currTrait)))
+            rslt += round( currTrait*numpy.sin(numpy.sqrt(abs(currTrait))), 4 )
         
         #make sure fitness is positive
         rslt = abs(rslt)
