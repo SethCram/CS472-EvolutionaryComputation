@@ -38,6 +38,8 @@ import numpy
 
 populationFitness = [None] * POPULATION_SIZE
 
+#populationsArr = numpy.array( [None] * NUMBER_OF_ISLANDS)
+
 #populationHistory = numpy.empty( EVOLVE_ITERATIONS, dtype=numpy.ndarray )
 #phList = numpy.empty( INDIVIDUALS_NUMBER_OF_TRAITS, dtype=numpy.ndarray )
 
@@ -66,6 +68,8 @@ for functionEnum, functionBounds in functionBoundsDict.items():
     solutions = set()
  
     start_time = time.time()
+    
+#    for i in range(NUMBER_OF_ISLANDS):
 
     while( len(solutions) < POSSIBLE_SOLUTIONS ):
         runsToFindSol = 0
@@ -80,6 +84,9 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                 population_size=POPULATION_SIZE, 
                 individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
             )
+            
+            #store pop in pops arr
+            #populationsArr[i] = population
 
             #run for desired generations
             for j in range(0, GENERATIONS_PER_RUN ):
@@ -158,7 +165,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
             
             #if zero fitness reached so sol found or max attempts per alg exceeded
             if( bestFitnessData[GENERATIONS_PER_RUN-1] == 0 
-               or MAX_ATTEMPTS_PER_ALG <= runsToFindSol ):
+            or MAX_ATTEMPTS_PER_ALG <= runsToFindSol ):
                 #print("it took " + str(runsToFindSol) + " runs to find a solution")
                 #exit loop
                 break
@@ -202,10 +209,10 @@ for functionEnum, functionBounds in functionBoundsDict.items():
         
         solNumber += 1
 
-    print(
-        "All " + str( len(solutions) ) + " solutions: " + str(solutions) + " found in " 
-        + str( time.time() - start_time ) + " seconds for {}.".format(functionEnum)
-    )
+        print(
+            "All " + str( len(solutions) ) + " solutions: " + str(solutions) + " found in " 
+            + str( time.time() - start_time ) + " seconds for {}.".format(functionEnum)
+        )
 
 """
 #t1 = numpy.arange(0, DESIRED_SOLUTIONS)
