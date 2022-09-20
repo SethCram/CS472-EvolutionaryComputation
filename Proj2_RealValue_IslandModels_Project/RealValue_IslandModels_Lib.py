@@ -190,8 +190,6 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
         rslt = abs(rslt)
         
     elif( functionToOptimize == GA_Functions.Ackley):
-        #init w/ added val outside of summation
-        rslt = 20 + numpy.e
         
         cosOfTwoPiTraitSum = 0
         
@@ -199,12 +197,17 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
             #cache curr trait
             currTrait = individual[i]
             #take summation of a custom funct
-            cosOfTwoPiTraitSum += CosOfTwoPiTrait(currTrait)
+            cosOfTwoPiTraitSum += round( CosOfTwoPiTrait(currTrait), 4)
             
-        rslt -= ( 
-            20 * numpy.exp( -0.2*numpy.sqrt((1/num_of_traits)*SqrdSum(individual)) ) 
-            - numpy.exp( (i/num_of_traits)*cosOfTwoPiTraitSum ) 
-        )
+        secondExpArg = -0.2*numpy.sqrt((1/num_of_traits)*SqrdSum(individual))
+        thirdExpArg = (1/num_of_traits)*cosOfTwoPiTraitSum
+            
+        firstExp = numpy.e 
+        secondExp = numpy.exp( secondExpArg )
+        thirdExp = numpy.exp( thirdExpArg ) 
+            
+        #need to round the rslt to the 15th decimal place or else all 0 input rslts in near zero
+        rslt = round( 20 + firstExp - 20*secondExp - thirdExp, 15)
         
         #make sure fitness is positive
         rslt = abs(rslt)
