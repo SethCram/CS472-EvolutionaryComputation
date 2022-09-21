@@ -47,6 +47,7 @@ class Implementation_Consts():
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     POSSIBLE_SOLUTIONS = 1
     GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
+    TRAIT_CHANGE_PERCENTAGE = 3
     
     PARENTS_SAVED_FOR_ELITISM = 2
     assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
@@ -359,10 +360,7 @@ def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.nd
 
 #endregion Breeding Functs
 
-"""
-Create a mutation function, which will have a small probability of changing the values of the new children.
-"""
-def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
+def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage: float ) -> bool:
     """
     Not a guaranteed mutation. 
     Mutation will occur in only 1 in every number of traits of child passed to this function.
@@ -373,52 +371,44 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
     
     #cache useful vals
     num_of_traits = len(child)
-    lower_bound, upper_bound = functionBounds
     
     #mutate every 1 / number of traits of child
     mutationChance = random.randint(1, num_of_traits )
     if( mutationChance == 1 ):
+        #cache bounds
+        lower_bound, upper_bound = functionBounds
+        
         #decide what child trait being mutated + cache it
         indexBeingMutated = random.randint(0, num_of_traits-1)
         traitBeingMutated = child[indexBeingMutated]
-        
-        traitChangePercentage = 10
         
         #change based on bounds
         boundsChange = abs(upper_bound) + abs(lower_bound)
         
         #use a percentage of the change in bounds as the trait change
-        traitChange = boundsChange * (traitChangePercentage / 100)
+        stdDev = boundsChange * (trait_change_percentage / 100)
         
-        #reuse gen'd rando number to decide whether add or subtr
-        # reduces tot number of rando calls by 1
+        #thread safe gauss distr random
+        randoGauss = random.normalvariate(mu=0, sigma=stdDev)
         
-        #if lower trait range
-        if( indexBeingMutated < int(num_of_traits/2) ):
-            #add trait change
-            traitBeingMutated += traitChange
-        #if higher trait range
-        else:
-            #subtr trait change
-            traitBeingMutated -= traitChange
+        #apply mutation
+        traitBeingMutated += randoGauss
         
-        #remutate until the trait being mutated is within domain bounds
-        while( traitBeingMutated < lower_bound or traitBeingMutated > upper_bound ):
+        #remutate until the trait being mutated is within domain bounds and mutation is nonzero
+        while( traitBeingMutated < lower_bound 
+              or traitBeingMutated > upper_bound 
+              or randoGauss == 0
+            ):
             
             #reset trait being mutated
             traitBeingMutated = child[indexBeingMutated]
             
-            #recalc trait change as half as big
-            traitChangePercentage /= 2 
-            traitChange = boundsChange * (traitChangePercentage / 100)
+            #thread safe gauss distr random
+            randoGauss = random.normalvariate(mu=0, sigma=stdDev)
             
-            #reroll whether adding or subtracting
-            if( random.randint(0,1) == 1):
-                #add trait change
-                traitBeingMutated += traitChange
-            else:
-                #subtr trait change
-                traitBeingMutated -= traitChange
+            #apply mutation
+            traitBeingMutated += randoGauss
+            
         
         """
         #clamp new trait to within bounds
@@ -535,7 +525,10 @@ def RunIsland(
                 #walk thru children
                 for child in children:
                     #mutate child 
-                    Mutate(functionBounds=functionBounds, child=child)
+                    Mutate(
+                        functionBounds=functionBounds, child=child,  
+                        trait_change_percentage=Implementation_Consts.TRAIT_CHANGE_PERCENTAGE
+                    )
             
             #walk thru gen'd children
             for child in children:

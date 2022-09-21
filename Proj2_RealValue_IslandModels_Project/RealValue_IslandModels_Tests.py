@@ -280,17 +280,21 @@ class TestMutateRelated(unittest.TestCase):
         
         individualToMutate = numpy.ones(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
         
-        unMutatedIndividual = individualToMutate
+        unMutatedIndividual = numpy.ones(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
         
         lower_bound = -1
         upper_bound = 1
         
         #loop till successful mutation
-        while(Mutate((lower_bound, upper_bound), individualToMutate) == False):
+        while(
+            Mutate((
+                lower_bound, upper_bound), individualToMutate, 
+                Implementation_Consts.TRAIT_CHANGE_PERCENTAGE
+            ) == False):
             pass
     
         #ensure individual mutated
-        self.assertTrue( 
+        self.assertFalse( 
             numpy.array_equal(unMutatedIndividual, individualToMutate),
             "Individual was never mutated."
         )

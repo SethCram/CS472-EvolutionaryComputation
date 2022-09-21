@@ -258,7 +258,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                         #walk thru children
                         for child in children:
                             #mutate child 
-                            Mutate(functionBounds=functionBounds, child=child)
+                            Mutate(functionBounds=functionBounds, child=child, trait_change_percentage=Implementation_Consts.TRAIT_CHANGE_PERCENTAGE)
                     
                     #walk thru gen'd children
                     for child in children:
