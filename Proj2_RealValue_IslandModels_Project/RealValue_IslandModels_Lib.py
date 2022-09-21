@@ -54,8 +54,11 @@ class Implementation_Consts():
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
     NUMBER_OF_ISLANDS = 5
-    MIGRATION_SIZE = 10
-    MIGRATION_INTERVAL = 5
+    MIGRATION_INTERVAL = 3
+    
+    MIGRATION_SIZE = 6
+    assert MIGRATION_SIZE % 2 == 0, "Need to use an even migration size."
+    assert MIGRATION_SIZE < POPULATION_SIZE, "Can't migrate more individuals than those in the population."
     
 class GA_Functions(Enum):
     """
@@ -430,8 +433,8 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
     generations: int, num_of_traits: int, parents_elitism_saves: int, 
-    island_model = False, migration_interval = 0, migration_size = 0,
-    sender_conn = None, recver_conn = None, 
+    parallel_island_model = False, migration_interval = 0, migration_size = 0,
+    sender_conn = None, listener_conn = None, 
     show_fitness_plots = False,
     ) -> tuple :
     """Runs an island using the input parameters.
@@ -451,53 +454,77 @@ def RunIsland(
  
     start_time = time.time()
     
+    if(parallel_island_model):
+        #leave room for migration pop
+        local_population_size = pop_size - migration_size
+    else:
+        local_population_size = pop_size
+    
     #create new population
     population = CreatePopulation(
         functionBounds=functionBounds, 
-        population_size=pop_size, 
+        population_size=local_population_size, #use local pop size incase diff from overall pop size
         individuals_num_of_traits=num_of_traits
     )
-    
-    #store pop in pops arr
-    #populationsArr[i] = population
 
     #run for desired generations
     for j in range(0, generations ):
 
-        #walk thru each individual in pop
-        for i in range(0, pop_size):
+        popFitnessIndex = migration_size
+
+        #walk thru each individual in local pop
+        for i in range(0, local_population_size):
             individual = population[i]
             individualFitness = EvalFitness(functionEnum, individual)
             
+            if(popFitnessIndex == 100):
+                pass
+            
             #store individual w/ their fitness data
-            populationFitness[i] = IndividualFitness( individual, individualFitness )
+            # don't need diff case for par island model as long as migration size 0 by default
+            populationFitness[popFitnessIndex] = IndividualFitness( individual, individualFitness )
+            popFitnessIndex += 1
             
             #if added individual is a sol
             if(individualFitness == 0):
                 solutions.add(tuple(individual))
+        
+        #cache local pop fitness
+        localPopFitness = populationFitness[migration_size:]
             
         #sort in ascending order by fitness (low/good to high/bad)
-        populationFitness.sort(key=getFitness)
+        localPopFitness.sort(key=getFitness)
         
-        #if doing island model and curr generation is on a migration interval
-        if( island_model and j % (migration_interval-1) == 0 ):
+        #recombo local and migrant pop
+        populationFitness = populationFitness[:migration_size] + localPopFitness
+        
+        #if doing parallel island model and curr generation is on a migration interval (or first gen)
+        if( parallel_island_model and j % (migration_interval-1) == 0 ):
             #take migrant sized section of most fit individuals
-            migrationPopFit = populationFitness[:migration_size]
+            migrationPopFit = populationFitness[migration_size:migration_size*2]
             
             #pipe it over to the next population
+            sender_conn.send(migrationPopFit)
             
             #pipe a keyword to get the listener to stop listening
             
-            #listen for more pipe data until the stop listening keyword is seen
+            #listen for more pipe data #until the stop listening keyword is seen
+            while True:
+                recvdMigrationPopFit = listener_conn.recv()
+                if( recvdMigrationPopFit != None):
+                    break
             
-            #use the recieved migrants to replace the old ones
+            #use the recieved migrants to replace the old ones at the front/most fit of the pop
+
+            #recombo local and migrant pop
+            populationFitness = recvdMigrationPopFit + localPopFitness
 
         #print(populationFitness)
 
         worstFitnessData[j] = max( populationFitness, key=getFitness ).fitness
         bestFitnessData[j] = min( populationFitness, key=getFitness ).fitness
 
-        #find avg
+        #find avg (including migrants if any)
         fitnessSum = 0
         for i in range(0, pop_size):
             #take the fitness sum
@@ -507,7 +534,7 @@ def RunIsland(
         popIndex = 0
             
         #Create a whole new pop from prev pop as parents
-        for k in range(0, int(pop_size/2)):
+        for k in range(0, int(local_population_size/2)):
             
             #if less children than parents saved for elitism
             if( k < parents_elitism_saves/2):
@@ -537,7 +564,7 @@ def RunIsland(
                 
                 popIndex += 1
                 
-        assert popIndex == pop_size, "Size of population was changed to {}.".format(popIndex)
+        assert popIndex == local_population_size, "Size of population was changed to {}.".format(popIndex)
         
         #print("asdfs %d" % j)
         
@@ -579,5 +606,10 @@ def RunIsland(
             plt.ylabel('Worst Fitness')
             plt.xlabel('Iteration')
             plt.show()
+
+    #if sender conn end of pipe given to funct
+    if(sender_conn != None):
+        #close sender pipe end
+        sender_conn.close()
 
     return bestFitness, bestFitnessData, worstFitnessData, bestFitnessData, avgFitnessData

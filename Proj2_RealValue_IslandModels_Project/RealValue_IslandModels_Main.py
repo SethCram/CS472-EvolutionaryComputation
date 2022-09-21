@@ -51,11 +51,10 @@ worstFitnessData = numpy.empty(Implementation_Consts.GENERATIONS_PER_RUN, dtype=
 bestFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
 avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
 
-SHOW_FITNESS_DATA = True
+SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-USE_ISLAND_MODEL = True
-RUN_IN_PARRALLEL = True
+PARRALLEL_ISLAND_MODEL = True
 
 #sol number
 solNumber = 0
@@ -66,189 +65,97 @@ if __name__ == '__main__':
 #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
         
-        if(USE_ISLAND_MODEL):
-            #if island model in parrallel
-            if(RUN_IN_PARRALLEL):
+        #if island model in parrallel
+        if(PARRALLEL_ISLAND_MODEL):
+            
+            #parrallel plots won't show fitness plots
+            
+            procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
+            listenerPipeEnds = []
+            senderPipeEnds = []
+            
+            #walk thru islands
+            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                #init a pipe for each 
+                senderPipePart, listenerPipePart = multiprocessing.Pipe()
                 
-                #parrallel plots won't show fitness plots
+                #store the ends in separate lists
+                senderPipeEnds.append(senderPipePart)
+                listenerPipeEnds.append(listenerPipePart)
+            
+            #walk thru islands
+            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
                 
-                procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
-                #listenerPipeEnd = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS)
-                #senderPipeEnd = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS)
-                listenerPipeEnds = []
-                senderPipeEnds = []
-                
-                #walk thru islands
-                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                    #init a pipe for each 
-                    senderPipePart, listenerPipePart = multiprocessing.Pipe()
-                    
-                    #store the ends in separate lists
-                    senderPipeEnds.append(senderPipePart)
-                    listenerPipeEnds.append(listenerPipePart)
-                    
-                    #senderPipeEnd[i], listenerPipeEnd[i] = multiprocessing.Pipe()
-                
-                #walk thru islands
-                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                    
-                    #special case for start
-                    if( i == 0 ):
-                        # creating new proc + add to proc arr
-                        procArr[i] =  multiprocessing.Process(
-                            target=RunIsland, 
-                            args=(
-                                functionEnum, functionBounds, 
-                                Implementation_Consts.POPULATION_SIZE,
-                                Implementation_Consts.GENERATIONS_PER_RUN,
-                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                                Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                                USE_ISLAND_MODEL,
-                                Implementation_Consts.MIGRATION_INTERVAL,
-                                Implementation_Consts.MIGRATION_SIZE,
-                                senderPipeEnds[i], #send to curr pipe index
-                                listenerPipeEnds[Implementation_Consts.NUMBER_OF_ISLANDS-1], #listen to prev pipe index w/ wrap around
-                                SHOW_FITNESS_DATA,  
-                            )
+                #special case for start
+                if( i == 0 ):
+                    # creating new proc + add to proc arr
+                    procArr[i] =  multiprocessing.Process(
+                        target=RunIsland, 
+                        args=(
+                            functionEnum, functionBounds, 
+                            Implementation_Consts.POPULATION_SIZE,
+                            Implementation_Consts.GENERATIONS_PER_RUN,
+                            Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                            Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
+                            PARRALLEL_ISLAND_MODEL,
+                            Implementation_Consts.MIGRATION_INTERVAL,
+                            Implementation_Consts.MIGRATION_SIZE,
+                            senderPipeEnds[i], #send to curr pipe index
+                            listenerPipeEnds[Implementation_Consts.NUMBER_OF_ISLANDS-1], #listen to prev pipe index w/ wrap around
+                            SHOW_FITNESS_DATA,  
                         )
-                    #if not start
-                    else:
-                        #create new proc + add to proc arr
-                        procArr[i] =  multiprocessing.Process(
-                            target=RunIsland, 
-                            args=(
-                                functionEnum, functionBounds, 
-                                Implementation_Consts.POPULATION_SIZE,
-                                Implementation_Consts.GENERATIONS_PER_RUN,
-                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                                Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                                USE_ISLAND_MODEL,
-                                Implementation_Consts.MIGRATION_INTERVAL,
-                                Implementation_Consts.MIGRATION_SIZE,
-                                senderPipeEnds[i], #send to curr index pipe
-                                listenerPipeEnds[i-1], #listen to prev index pipe
-                                SHOW_FITNESS_DATA,
-                                # parent_conn,msgs   
-                            )
-                        )
-                    
-                
-                #walk thru islands
-                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                    #start each proc
-                    procArr[i].start()
-                
-                #walk thru islands
-                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                    #wait till each proc finished
-                    procArr[i].join()
-                    
-                    #should cache results from this proc's funct call?
-                
-                """
-                # creating a pipe
-                parent_conn0, child_conn1 = multiprocessing.Pipe()
-                
-                p0 = multiprocessing.Process(
-                    target=RunIsland, 
-                    args=(
-                        functionEnum, functionBounds, 
-                        Implementation_Consts.POPULATION_SIZE,
-                        Implementation_Consts.GENERATIONS_PER_RUN,
-                        Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                        Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                        USE_ISLAND_MODEL,
-                        Implementation_Consts.MIGRATION_INTERVAL,
-                        Implementation_Consts.MIGRATION_SIZE,
-                        
-                        SHOW_FITNESS_DATA,
-                        # parent_conn,msgs
                     )
+                #if not start
+                else:
+                    #create new proc + add to proc arr
+                    procArr[i] =  multiprocessing.Process(
+                        target=RunIsland, 
+                        args=(
+                            functionEnum, functionBounds, 
+                            Implementation_Consts.POPULATION_SIZE,
+                            Implementation_Consts.GENERATIONS_PER_RUN,
+                            Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                            Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
+                            PARRALLEL_ISLAND_MODEL,
+                            Implementation_Consts.MIGRATION_INTERVAL,
+                            Implementation_Consts.MIGRATION_SIZE,
+                            senderPipeEnds[i], #send to curr index pipe
+                            listenerPipeEnds[i-1], #listen to prev index pipe
+                            SHOW_FITNESS_DATA,
+                            # parent_conn,msgs   
+                        )
+                    )
+                
+            
+            #walk thru islands
+            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                #start each proc
+                procArr[i].start()
+            
+            #walk thru islands
+            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                #wait till each proc finished
+                procArr[i].join()
+                
+                #should cache results from this proc's funct call?
+                            
+        #if serial islands
+        else:
+            islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=tuple)
+            
+            #run sequential islands w/ no migration
+            for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
+                #run an islands and cache its resultant fitness data
+                islands[i] =  RunIsland(
+                    functionEnum, functionBounds, 
+                    Implementation_Consts.POPULATION_SIZE,
+                    Implementation_Consts.GENERATIONS_PER_RUN,
+                    Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                    Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
+                    show_fitness_plots=SHOW_FITNESS_DATA,
                 )
                 
-                #run parrallel islands w/ migration
-                for i in range(0, int(Implementation_Consts.NUMBER_OF_ISLANDS/2) ):
-
-                    # creating a pipe
-                    parent_conn, child_conn = multiprocessing.Pipe()
-                    
-                    if( i == 0 ):
-                        # creating new processes
-                        p1 = multiprocessing.Process(
-                            target=RunIsland, 
-                            args=(
-                                functionEnum, functionBounds, 
-                                Implementation_Consts.POPULATION_SIZE,
-                                Implementation_Consts.GENERATIONS_PER_RUN,
-                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                                Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                                USE_ISLAND_MODEL,
-                                Implementation_Consts.MIGRATION_INTERVAL,
-                                Implementation_Consts.MIGRATION_SIZE,
-                                parent_conn, child_conn,
-                                SHOW_FITNESS_DATA,
-                                # parent_conn,msgs   
-                            )
-                        )
-                        
-                    else:
-                        # creating new processes
-                        p1 = multiprocessing.Process(
-                            target=RunIsland, 
-                            args=(
-                                functionEnum, functionBounds, 
-                                Implementation_Consts.POPULATION_SIZE,
-                                Implementation_Consts.GENERATIONS_PER_RUN,
-                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                                Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                                USE_ISLAND_MODEL,
-                                Implementation_Consts.MIGRATION_INTERVAL,
-                                Implementation_Consts.MIGRATION_SIZE,
-                                parent_conn, child_conn,
-                                SHOW_FITNESS_DATA,
-                                # parent_conn,msgs
-                            )
-                        )
-                    p2 = multiprocessing.Process(
-                        target=RunIsland, 
-                        args=(child_conn,)
-                    )
-                    
-                    procArr.append(p1)
-                    procArr.append(p2)
-                """
-                    
-            #if island model but not in parrallel
-            else:
-                islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS)
-                
-                #run sequential islands w/ no migration
-                for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
-                    #run an islands and cache its resultant fitness data
-                    islands[i] =  RunIsland(
-                        functionEnum, functionBounds, 
-                        Implementation_Consts.POPULATION_SIZE,
-                        Implementation_Consts.GENERATIONS_PER_RUN,
-                        Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                        Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                        USE_ISLAND_MODEL,
-                        Implementation_Consts.MIGRATION_INTERVAL,
-                        Implementation_Consts.MIGRATION_SIZE,
-                        show_fitness_plots=SHOW_FITNESS_DATA,
-                    )
-                    
-                #select island w/ best fitness to plot
-                    
-        #if not using island model
-        else:
-            RunIsland(
-                functionEnum, functionBounds, 
-                Implementation_Consts.POPULATION_SIZE,
-                Implementation_Consts.GENERATIONS_PER_RUN,
-                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                show_fitness_plots=SHOW_FITNESS_DATA
-            )
+            #select island w/ best fitness to plot
         
         """
         #Sets cannot have two items with the same value.
