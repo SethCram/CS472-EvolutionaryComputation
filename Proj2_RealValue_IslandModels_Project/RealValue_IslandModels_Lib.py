@@ -38,12 +38,19 @@ from dataclasses import dataclass
 
 
 class Implementation_Consts():
+    """
+    Unchanging constants useable, but not required, to use this library.
+    Tests for this library leverage these constants.
+    """
     #init unchanging constants
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     POSSIBLE_SOLUTIONS = 1
     GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
+    
     PARENTS_SAVED_FOR_ELITISM = 2
+    assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
+    assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
     NUMBER_OF_ISLANDS = 15
     MIGRATION_SIZE = 10
@@ -433,8 +440,15 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
     generations: int, num_of_traits: int, parents_elitism_saves: int, 
-    show_fitness_plots: bool, migration_interval: int, migration_size: int,
-    ):
+    island_model = False, migration_interval = 0, migration_size = 0,
+    sender_conn = None, recver_conn = None, 
+    show_fitness_plots = False,
+    ) -> tuple :
+    """Runs an island using the input parameters.
+
+    Returns:
+        tuple: best fitness score, worstFitnessData, bestFitnessData, avgFitnessData
+    """
     
     #init fitness data space
     worstFitnessData = numpy.empty(generations, dtype=float )
@@ -475,8 +489,8 @@ def RunIsland(
         #sort in ascending order by fitness (low/good to high/bad)
         populationFitness.sort(key=getFitness)
         
-        #if generation is on a migration interval
-        if( j % (migration_interval-1) == 0 ):
+        #if doing island model and curr generation is on a migration interval
+        if( island_model and j % (migration_interval-1) == 0 ):
             #take migrant sized section of most fit individuals
             migrationPopFit = populationFitness[:migration_size]
             
@@ -537,10 +551,12 @@ def RunIsland(
         #if( bestFitnessData[j] == 0 ):
         #    print("Best fitness of zero reached for configuration " + str( populationFitness ) )
     
+    bestFitness = bestFitnessData[generations-1]
+    
     #document best fitness per run
     print(
         "Island resulted in a best fitness of " 
-        + str(bestFitnessData[generations-1])
+        + str(bestFitness)
         + " for {} in {} seconds.".format(functionEnum, time.time() - start_time)
     )
     
@@ -570,3 +586,5 @@ def RunIsland(
             plt.ylabel('Worst Fitness')
             plt.xlabel('Iteration')
             plt.show()
+
+    return bestFitness, bestFitnessData, worstFitnessData, bestFitnessData, avgFitnessData
