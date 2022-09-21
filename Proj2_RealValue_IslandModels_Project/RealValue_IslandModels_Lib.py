@@ -37,18 +37,17 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
 
-#class Implementation_Consts():
+class Implementation_Consts():
+    #init unchanging constants
+    POPULATION_SIZE = 100
+    INDIVIDUALS_NUMBER_OF_TRAITS = 10
+    POSSIBLE_SOLUTIONS = 1
+    GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
+    PARENTS_SAVED_FOR_ELITISM = 2
 
-#init unchanging constants
-POPULATION_SIZE = 100
-INDIVIDUALS_NUMBER_OF_TRAITS = 10
-POSSIBLE_SOLUTIONS = 1
-GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
-PARENTS_SAVED_FOR_ELITISM = 2
-
-NUMBER_OF_ISLANDS = 15
-MIGRATION_SIZE = 10
-MIGRATION_INTERVAL = 5
+    NUMBER_OF_ISLANDS = 15
+    MIGRATION_SIZE = 10
+    MIGRATION_INTERVAL = 5
     
 class GA_Functions(Enum):
     """

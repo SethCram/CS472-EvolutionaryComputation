@@ -36,36 +36,36 @@ import numpy
     
 #init space for arrays
 
-populationFitness = [None] * POPULATION_SIZE
+populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
 
-#populationsArr = numpy.array( [None] * NUMBER_OF_ISLANDS)
+#populationsArr = numpy.array( [None] * Implementation_Consts.NUMBER_OF_ISLANDS)
 
-#populationHistory = numpy.empty( EVOLVE_ITERATIONS, dtype=numpy.ndarray )
-#phList = numpy.empty( INDIVIDUALS_NUMBER_OF_TRAITS, dtype=numpy.ndarray )
+#populationHistory = numpy.empty( Implementation_Consts.EVOLVE_ITERATIONS, dtype=numpy.ndarray )
+#phList = numpy.empty( Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, dtype=numpy.ndarray )
 
 #elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
 #elapsedTimeToFindSol = []
 
-worstFitnessData = numpy.empty(GENERATIONS_PER_RUN, dtype=float )
-bestFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
-avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
+worstFitnessData = numpy.empty(Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+bestFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
 
 SHOW_FITNESS_DATA = True
 MAX_ATTEMPTS_PER_ALG = 1
 
 USE_ISLAND_MODEL = True
 
-assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
-assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
+assert Implementation_Consts.PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
+assert Implementation_Consts.PARENTS_SAVED_FOR_ELITISM < Implementation_Consts.POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
 """
 def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
     
     #init fitness data space
-    worstFitnessData = numpy.empty(GENERATIONS_PER_RUN, dtype=float )
-    bestFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
-    avgFitnessData = numpy.empty( GENERATIONS_PER_RUN, dtype=float )
-    populationFitness = [None] * POPULATION_SIZE
+    worstFitnessData = numpy.empty(Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+    bestFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+    avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+    populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
     
     #Sets cannot have two items with the same value.
     solutions = set()
@@ -75,18 +75,18 @@ def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
     #create new population
     population = CreatePopulation(
         functionBounds=functionBounds, 
-        population_size=POPULATION_SIZE, 
-        individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
+        population_size=Implementation_Consts.POPULATION_SIZE, 
+        individuals_num_of_traits=Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS
     )
     
     #store pop in pops arr
     #populationsArr[i] = population
 
     #run for desired generations
-    for j in range(0, GENERATIONS_PER_RUN ):
+    for j in range(0, Implementation_Consts.GENERATIONS_PER_RUN ):
 
         #walk thru each individual in pop
-        for i in range(0, POPULATION_SIZE):
+        for i in range(0, Implementation_Consts.POPULATION_SIZE):
             individual = population[i]
             individualFitness = EvalFitness(functionEnum, individual)
             
@@ -101,9 +101,9 @@ def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
         populationFitness.sort(key=getFitness)
         
         #if generation is on a migration interval
-        if( j % (MIGRATION_INTERVAL-1) == 0 ):
+        if( j % (Implementation_Consts.MIGRATION_INTERVAL-1) == 0 ):
             #take migrant sized section of most fit individuals
-            migrationPopFit = populationFitness[:MIGRATION_SIZE]
+            migrationPopFit = populationFitness[:Implementation_Consts.MIGRATION_SIZE]
             
             #pipe it over to the next population
             
@@ -120,18 +120,18 @@ def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
 
         #find avg
         fitnessSum = 0
-        for i in range(0, POPULATION_SIZE):
+        for i in range(0, Implementation_Consts.POPULATION_SIZE):
             #take the fitness sum
             fitnessSum += populationFitness[i].fitness            
-        avgFitnessData[j] =  fitnessSum/POPULATION_SIZE 
+        avgFitnessData[j] =  fitnessSum/Implementation_Consts.POPULATION_SIZE 
             
         popIndex = 0
             
         #Create a whole new pop from prev pop as parents
-        for k in range(0, int(POPULATION_SIZE/2)):
+        for k in range(0, int(Implementation_Consts.POPULATION_SIZE/2)):
             
             #if less children than parents saved for elitism
-            if( k < PARENTS_SAVED_FOR_ELITISM/2):
+            if( k < Implementation_Consts.PARENTS_SAVED_FOR_ELITISM/2):
                 #apply elitism for next 2 most fit parents
                 children = populationFitness[k].individual, populationFitness[k+1].individual
             
@@ -155,7 +155,7 @@ def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
                 
                 popIndex += 1
                 
-        assert popIndex == POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
+        assert popIndex == Implementation_Consts.POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
         
         #print("asdfs %d" % j)
         
@@ -165,12 +165,12 @@ def RunIsland(functionEnum: GA_Functions, functionBounds: tuple):
     #document best fitness per run
     print(
         "Island resulted in a best fitness of " 
-        + str(bestFitnessData[GENERATIONS_PER_RUN-1])
+        + str(bestFitnessData[Implementation_Consts.GENERATIONS_PER_RUN-1])
         + " for {} in {} seconds.".format(functionEnum, time.time() - start_time)
     )
     
     if(SHOW_FITNESS_DATA):
-            t = numpy.arange(0, GENERATIONS_PER_RUN)
+            t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
             
             plt.rcParams.update({'font.size': 22})
             plt.plot(t, bestFitnessData) 
@@ -204,21 +204,19 @@ solNumber = 0
 for functionEnum, functionBounds in functionBoundsDict.items():
     
     #run sequential islands
-    for i in range(0, NUMBER_OF_ISLANDS):
-        RunIsland(functionEnum, functionBounds)
+    #for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
+    #    RunIsland(functionEnum, functionBounds)
     
-    """
+    
     #Sets cannot have two items with the same value.
     solutions = set()
  
     start_time = time.time()
     
-#    for i in range(NUMBER_OF_ISLANDS):
+#    for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
     
-    while( len(solutions) < POSSIBLE_SOLUTIONS ):
+    while( len(solutions) < Implementation_Consts.POSSIBLE_SOLUTIONS ):
         runsToFindSol = 0
-        
-        RunIsland()
         
         
         #create new and scrap old evo comp rslts if sol not found
@@ -228,18 +226,18 @@ for functionEnum, functionBounds in functionBoundsDict.items():
             #create new population
             population = CreatePopulation(
                 functionBounds=functionBounds, 
-                population_size=POPULATION_SIZE, 
-                individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
+                population_size=Implementation_Consts.POPULATION_SIZE, 
+                individuals_num_of_traits=Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS
             )
             
             #store pop in pops arr
             #populationsArr[i] = population
 
             #run for desired generations
-            for j in range(0, GENERATIONS_PER_RUN ):
+            for j in range(0, Implementation_Consts.GENERATIONS_PER_RUN ):
 
                 #walk thru each individual in pop
-                for i in range(0, POPULATION_SIZE):
+                for i in range(0, Implementation_Consts.POPULATION_SIZE):
                     individual = population[i]
                     individualFitness = EvalFitness(functionEnum, individual)
                     
@@ -254,9 +252,9 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                 populationFitness.sort(key=getFitness)
                 
                 #if generation is on a migration interval
-                if( j % (MIGRATION_INTERVAL-1) == 0 ):
+                if( j % (Implementation_Consts.MIGRATION_INTERVAL-1) == 0 ):
                     #take migrant sized section of most fit individuals
-                    migrationPopFit = populationFitness[:MIGRATION_SIZE]
+                    migrationPopFit = populationFitness[:Implementation_Consts.MIGRATION_SIZE]
                     
                     #pipe it over to the next population
                     
@@ -273,18 +271,18 @@ for functionEnum, functionBounds in functionBoundsDict.items():
 
                 #find avg
                 fitnessSum = 0
-                for i in range(0, POPULATION_SIZE):
+                for i in range(0, Implementation_Consts.POPULATION_SIZE):
                     #take the fitness sum
                     fitnessSum += populationFitness[i].fitness            
-                avgFitnessData[j] =  fitnessSum/POPULATION_SIZE 
+                avgFitnessData[j] =  fitnessSum/Implementation_Consts.POPULATION_SIZE 
                     
                 popIndex = 0
                     
                 #Create a whole new pop from prev pop as parents
-                for k in range(0, int(POPULATION_SIZE/2)):
+                for k in range(0, int(Implementation_Consts.POPULATION_SIZE/2)):
                     
                     #if less children than parents saved for elitism
-                    if( k < PARENTS_SAVED_FOR_ELITISM/2):
+                    if( k < Implementation_Consts.PARENTS_SAVED_FOR_ELITISM/2):
                         #apply elitism for next 2 most fit parents
                         children = populationFitness[k].individual, populationFitness[k+1].individual
                     
@@ -308,7 +306,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
                         
                         popIndex += 1
                         
-                assert popIndex == POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
+                assert popIndex == Implementation_Consts.POPULATION_SIZE, "Size of population was changed to {}.".format(popIndex)
                 
                 #print("asdfs %d" % j)
                 
@@ -319,12 +317,12 @@ for functionEnum, functionBounds in functionBoundsDict.items():
             print(
                 "Run " + str(runsToFindSol) 
                 + " resulted in a best fitness of " 
-                + str(bestFitnessData[GENERATIONS_PER_RUN-1])
+                + str(bestFitnessData[Implementation_Consts.GENERATIONS_PER_RUN-1])
                 + " for {}".format(functionEnum)
             )
             
             #if zero fitness reached so sol found or max attempts per alg exceeded
-            if( bestFitnessData[GENERATIONS_PER_RUN-1] == 0 
+            if( bestFitnessData[Implementation_Consts.GENERATIONS_PER_RUN-1] == 0 
             or MAX_ATTEMPTS_PER_ALG <= runsToFindSol ):
                 #print("it took " + str(runsToFindSol) + " runs to find a solution")
                 #exit loop
@@ -333,7 +331,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
         #print("My program took", elapsedTimeToFindSol[k], "seconds to run")
         
         if(SHOW_FITNESS_DATA):
-            t = numpy.arange(0, GENERATIONS_PER_RUN)
+            t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
             
             plt.rcParams.update({'font.size': 22})
             plt.plot(t, bestFitnessData) 
@@ -373,7 +371,7 @@ for functionEnum, functionBounds in functionBoundsDict.items():
             "All " + str( len(solutions) ) + " solutions: " + str(solutions) + " found in " 
             + str( time.time() - start_time ) + " seconds for {}.".format(functionEnum)
         )
-    """
+    
 
 """
 #t1 = numpy.arange(0, DESIRED_SOLUTIONS)

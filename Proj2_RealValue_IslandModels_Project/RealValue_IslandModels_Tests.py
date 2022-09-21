@@ -50,15 +50,15 @@ class TestCreationMethods(unittest.TestCase):
             #create rando individual
             
             testIndividual = CreateRandomIndividual(
-                num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS, 
+                num_of_traits=Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, 
                 lower_bound_inclusive=lower_bound,
                 upper_bound_inclusive=upper_bound
             )
             
             #trait number check
             self.assertTrue(
-                len(testIndividual) == INDIVIDUALS_NUMBER_OF_TRAITS,
-                "A test trait for {} doesn't have {} traits.".format(functionEnum, INDIVIDUALS_NUMBER_OF_TRAITS) 
+                len(testIndividual) == Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                "A test trait for {} doesn't have {} traits.".format(functionEnum, Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS) 
             )
             
             #walk thru individual's traits
@@ -85,15 +85,15 @@ class TestCreationMethods(unittest.TestCase):
             #create new population
             population = CreatePopulation(
                 functionBounds=functionBounds, 
-                population_size=POPULATION_SIZE, 
-                individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
+                population_size=Implementation_Consts.POPULATION_SIZE, 
+                individuals_num_of_traits=Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS
             )
             
             newPopSize = len(population)
             
             #pop size check
             self.assertTrue(
-                newPopSize == POPULATION_SIZE,
+                newPopSize == Implementation_Consts.POPULATION_SIZE,
                 "Size of population was changed to {} for {}.".format(newPopSize, functionEnum)
             )
 
@@ -107,8 +107,8 @@ class TestFitnessRelated(unittest.TestCase):
         #walk thru funct bounds dict
         for functionEnum, functionTargetInput in functionInputTargetDict.items():
             
-            #testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=float)
-            testIndividual = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=numpy.float64)
+            #testIndividual = numpy.full(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=float)
+            testIndividual = numpy.full(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, functionTargetInput, dtype=numpy.float64)
             
             testIndividualFitness = EvalFitness(functionEnum, testIndividual)
             
@@ -129,7 +129,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
         
         testDataCount = 1000000
         
-        xIndexRange, prob = SetupHalfNormIntDistr(POPULATION_SIZE)
+        xIndexRange, prob = SetupHalfNormIntDistr(Implementation_Consts.POPULATION_SIZE)
         
         #take rando nums using the calc'd prob and index range
         randoNums = numpy.random.choice(xIndexRange, size = testDataCount, p = prob)
@@ -141,7 +141,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
         indexCountDict = dict(zip(unique, counts))
         
         compIndex1 = 0
-        compIndex2 = int(POPULATION_SIZE/3)
+        compIndex2 = int(Implementation_Consts.POPULATION_SIZE/3)
         
         #ensure index 0 occured more often than the comp2 index
         self.assertGreater(
@@ -157,19 +157,19 @@ class TestSelectionRelatedMethods(unittest.TestCase):
         #If told to display the distribution graph the selection function displays a plot.
         """
         
-        populationFitness = [None] * POPULATION_SIZE
+        populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
         
         for functionEnum, functionBounds in functionBoundsDict.items():
         
             #create new population
             population = CreatePopulation(
                 functionBounds=functionBounds, 
-                population_size=POPULATION_SIZE, 
-                individuals_num_of_traits=INDIVIDUALS_NUMBER_OF_TRAITS
+                population_size=Implementation_Consts.POPULATION_SIZE, 
+                individuals_num_of_traits=Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS
             )
 
             #walk thru each individual in pop
-            for i in range(0, POPULATION_SIZE):
+            for i in range(0, Implementation_Consts.POPULATION_SIZE):
                 individual = population[i]
                 individualFitness = EvalFitness(functionEnum, individual)
                 
@@ -223,10 +223,10 @@ class TestCrossoverRelated(unittest.TestCase):
         parent2Val = 1
     
         #init parent array w/ 0's
-        parent1 = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, parent1Val)
+        parent1 = numpy.full(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, parent1Val)
         
         #init parent array w/ 1's
-        parent2 = numpy.full(INDIVIDUALS_NUMBER_OF_TRAITS, parent2Val)
+        parent2 = numpy.full(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, parent2Val)
         
         #create new children using parents
         children = CrossoverBreed(parent1, parent2)
@@ -255,14 +255,14 @@ class TestCrossoverRelated(unittest.TestCase):
             
             #ensure child isn't clone of either parent
             self.assertTrue(
-                parent1Vals < INDIVIDUALS_NUMBER_OF_TRAITS
-                and parent2Vals < INDIVIDUALS_NUMBER_OF_TRAITS,
+                parent1Vals < Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS
+                and parent2Vals < Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
                 "This child is a clone of one of its parents."
             )
             
             #ensure all child traits from one of its parents
             self.assertTrue(
-                parent1Vals + parent2Vals == INDIVIDUALS_NUMBER_OF_TRAITS,
+                parent1Vals + parent2Vals == Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
                 "One of the child's traits aren't from either parent."
             )
 
@@ -278,7 +278,7 @@ class TestMutateRelated(unittest.TestCase):
         
         #should run multiple times for bounds verification
         
-        individualToMutate = numpy.ones(INDIVIDUALS_NUMBER_OF_TRAITS)
+        individualToMutate = numpy.ones(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
         
         unMutatedIndividual = individualToMutate
         
