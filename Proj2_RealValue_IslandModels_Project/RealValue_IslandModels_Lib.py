@@ -30,10 +30,14 @@ Project Requirements:
 
 from enum import Enum
 import random
+import time
 import numpy
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+
+
+#class Implementation_Consts():
 
 #init unchanging constants
 POPULATION_SIZE = 100
@@ -426,3 +430,144 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray ) -> bool:
     
     #return false bc didn't mutate
     return False      
+
+def RunIsland(
+    functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
+    generations: int, num_of_traits: int, parents_elitism_saves: int, 
+    show_fitness_plots: bool, migration_interval: int, migration_size: int,
+    ):
+    
+    #init fitness data space
+    worstFitnessData = numpy.empty(generations, dtype=float )
+    bestFitnessData = numpy.empty( generations, dtype=float )
+    avgFitnessData = numpy.empty( generations, dtype=float )
+    populationFitness = [None] * pop_size
+    
+    #Sets cannot have two items with the same value.
+    solutions = set()
+ 
+    start_time = time.time()
+    
+    #create new population
+    population = CreatePopulation(
+        functionBounds=functionBounds, 
+        population_size=pop_size, 
+        individuals_num_of_traits=num_of_traits
+    )
+    
+    #store pop in pops arr
+    #populationsArr[i] = population
+
+    #run for desired generations
+    for j in range(0, generations ):
+
+        #walk thru each individual in pop
+        for i in range(0, pop_size):
+            individual = population[i]
+            individualFitness = EvalFitness(functionEnum, individual)
+            
+            #store individual w/ their fitness data
+            populationFitness[i] = IndividualFitness( individual, individualFitness )
+            
+            #if added individual is a sol
+            if(individualFitness == 0):
+                solutions.add(tuple(individual))
+            
+        #sort in ascending order by fitness (low/good to high/bad)
+        populationFitness.sort(key=getFitness)
+        
+        #if generation is on a migration interval
+        if( j % (migration_interval-1) == 0 ):
+            #take migrant sized section of most fit individuals
+            migrationPopFit = populationFitness[:migration_size]
+            
+            #pipe it over to the next population
+            
+            #pipe a keyword to get the listener to stop listening
+            
+            #listen for more pipe data until the stop listening keyword is seen
+            
+            #use the recieved migrants to replace the old ones
+
+        #print(populationFitness)
+
+        worstFitnessData[j] = max( populationFitness, key=getFitness ).fitness
+        bestFitnessData[j] = min( populationFitness, key=getFitness ).fitness
+
+        #find avg
+        fitnessSum = 0
+        for i in range(0, pop_size):
+            #take the fitness sum
+            fitnessSum += populationFitness[i].fitness            
+        avgFitnessData[j] =  fitnessSum/pop_size 
+            
+        popIndex = 0
+            
+        #Create a whole new pop from prev pop as parents
+        for k in range(0, int(pop_size/2)):
+            
+            #if less children than parents saved for elitism
+            if( k < parents_elitism_saves/2):
+                #apply elitism for next 2 most fit parents
+                children = populationFitness[k].individual, populationFitness[k+1].individual
+            
+            #not applying elitism
+            else:
+                #find parents
+                parents = BreedSelection(populationFitness)
+
+                #crossover breed parents to get children
+                children = CrossoverBreed(parents[0], parents[1])
+
+                #walk thru children
+                for child in children:
+                    #mutate child 
+                    Mutate(functionBounds=functionBounds, child=child)
+            
+            #walk thru gen'd children
+            for child in children:
+                #add to new population (reuse old space)
+                population[popIndex] = child
+                
+                popIndex += 1
+                
+        assert popIndex == pop_size, "Size of population was changed to {}.".format(popIndex)
+        
+        #print("asdfs %d" % j)
+        
+        #if( bestFitnessData[j] == 0 ):
+        #    print("Best fitness of zero reached for configuration " + str( populationFitness ) )
+    
+    #document best fitness per run
+    print(
+        "Island resulted in a best fitness of " 
+        + str(bestFitnessData[generations-1])
+        + " for {} in {} seconds.".format(functionEnum, time.time() - start_time)
+    )
+    
+    if(show_fitness_plots):
+            t = numpy.arange(0, generations)
+            
+            plt.rcParams.update({'font.size': 22})
+            plt.plot(t, bestFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Best Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Best Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 2)
+            plt.plot(t, avgFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Average Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Average Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 3)
+            plt.plot(t, worstFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Worst Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Worst Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
