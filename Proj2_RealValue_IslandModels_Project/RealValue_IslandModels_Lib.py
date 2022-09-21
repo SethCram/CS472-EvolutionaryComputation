@@ -53,7 +53,7 @@ class Implementation_Consts():
     assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
-    NUMBER_OF_ISLANDS = 15
+    NUMBER_OF_ISLANDS = 5
     MIGRATION_SIZE = 10
     MIGRATION_INTERVAL = 5
     
