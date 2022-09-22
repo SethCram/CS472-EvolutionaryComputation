@@ -54,7 +54,7 @@ import multiprocessing
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-PARRALLEL_ISLAND_MODEL = False
+PARRALLEL_ISLAND_MODEL = True
 
 #sol number
 solNumber = 0
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         if(PARRALLEL_ISLAND_MODEL):
             
             #init multi proccing queue
-            q = multiprocessing.Queue()
+            q = multiprocessing.Manager().Queue() 
             
             #parrallel plots won't show fitness plots (sometimes)
             
@@ -141,12 +141,12 @@ if __name__ == '__main__':
             for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
                 #wait till each proc finished
                 procArr[i].join()
-                
-                #should cache results from this proc's funct call?
+            
             islandsIndex = 0
+            
             while not q.empty():
-                islands[islandsIndex] = q.get()
-                islandsIndex += 1
+                    islands[islandsIndex] = q.get()
+                    islandsIndex += 1
                             
         #if serial islands
         else:

@@ -29,6 +29,7 @@ Project Requirements:
 """
 
 from enum import Enum
+import multiprocessing
 import random
 import time
 import numpy
@@ -660,6 +661,11 @@ def RunIsland(
     if(results_queue != None):
         #place the results in the queue
         results_queue.put( results_tuple )
+        
+        #may have to implement a queue lock so sub proc's won't write to queue at same time
+        
+        #cancel sub proc so won't wait till queue emptied
+        #multiprocessing.JoinableQueue.cancel_join_thread()
 
     #return the results queue
     return results_tuple
