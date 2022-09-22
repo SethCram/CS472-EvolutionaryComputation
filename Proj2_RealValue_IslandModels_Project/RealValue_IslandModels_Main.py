@@ -54,11 +54,10 @@ avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=f
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-PARRALLEL_ISLAND_MODEL = True
+PARRALLEL_ISLAND_MODEL = False
 
 #sol number
 solNumber = 0
-
 
 #guard in the main module to avoid creating subprocesses recursively in Windows.
 if __name__ == '__main__': 
@@ -154,9 +153,58 @@ if __name__ == '__main__':
                     Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
                     show_fitness_plots=SHOW_FITNESS_DATA,
                 )
-                
+            
             #select island w/ best fitness to plot
-        
+                
+            #init best fitness w/ island 0's best fitness
+            bestFitIslandIndex = 0
+            bestFitness = islands[bestFitIslandIndex][0]
+                
+            #run sequential islands w/ no migration
+            for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
+                #cache curr island's best fitness
+                currIslandBestFitness = islands[i][0]
+                
+                #if curr island's best fitness is better than best fitness
+                if( currIslandBestFitness < bestFitness ):
+                    #replace best fitness
+                    bestFitness = currIslandBestFitness
+                    #copy over curr island's index to save as best island index
+                    bestFitIslandIndex = i
+                
+            #store traits of best island for plotting
+            bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = islands[bestFitIslandIndex]
+                
+            print("Best island's fitness is {}".format(bestFitness))
+                
+            t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
+            
+            #plot fitness data of best sequential island
+            
+            plt.rcParams.update({'font.size': 22})
+            plt.plot(t, bestFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Best Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Best Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 2)
+            plt.plot(t, avgFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Average Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Average Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+
+            #plt.subplot(3, 1, 3)
+            plt.plot(t, worstFitnessData) 
+            plt.grid() #add a grid to graph
+            plt.title('Worst Fitness per Iteration for {}'.format(functionEnum))
+            plt.ylabel('Worst Fitness')
+            plt.xlabel('Iteration')
+            plt.show()
+            
         """
         #Sets cannot have two items with the same value.
         solutions = set()

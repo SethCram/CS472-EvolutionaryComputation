@@ -53,7 +53,7 @@ class Implementation_Consts():
     assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
-    NUMBER_OF_ISLANDS = 5
+    NUMBER_OF_ISLANDS = 3
     MIGRATION_INTERVAL = 3
     
     MIGRATION_SIZE = 6
@@ -612,4 +612,4 @@ def RunIsland(
         #close sender pipe end
         sender_conn.close()
 
-    return bestFitness, bestFitnessData, worstFitnessData, bestFitnessData, avgFitnessData
+    return bestFitness, bestFitnessData, avgFitnessData, worstFitnessData
