@@ -37,7 +37,7 @@ import multiprocessing
     
 #init space for arrays
 
-populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
+#populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
 
 #populationsArr = numpy.array( [None] * Implementation_Consts.NUMBER_OF_ISLANDS)
 
@@ -47,9 +47,9 @@ populationFitness = [None] * Implementation_Consts.POPULATION_SIZE
 #elapsedTimeToFindSol = numpy.empty( DESIRED_SOLUTIONS, dtype=float)
 #elapsedTimeToFindSol = []
 
-worstFitnessData = numpy.empty(Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
-bestFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
-avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+#worstFitnessData = numpy.empty(Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+#bestFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
+#avgFitnessData = numpy.empty( Implementation_Consts.GENERATIONS_PER_RUN, dtype=float )
 
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
@@ -59,6 +59,8 @@ PARRALLEL_ISLAND_MODEL = False
 #sol number
 solNumber = 0
 
+islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=tuple)
+
 #guard in the main module to avoid creating subprocesses recursively in Windows.
 if __name__ == '__main__': 
 #loop thru each function and their bounds
@@ -67,7 +69,10 @@ if __name__ == '__main__':
         #if island model in parrallel
         if(PARRALLEL_ISLAND_MODEL):
             
-            #parrallel plots won't show fitness plots
+            #init multi proccing queue
+            q = multiprocessing.Queue()
+            
+            #parrallel plots won't show fitness plots (sometimes)
             
             procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
             listenerPipeEnds = []
@@ -101,6 +106,7 @@ if __name__ == '__main__':
                             Implementation_Consts.MIGRATION_SIZE,
                             senderPipeEnds[i], #send to curr pipe index
                             listenerPipeEnds[Implementation_Consts.NUMBER_OF_ISLANDS-1], #listen to prev pipe index w/ wrap around
+                            q,
                             SHOW_FITNESS_DATA,  
                         )
                     )
@@ -120,8 +126,8 @@ if __name__ == '__main__':
                             Implementation_Consts.MIGRATION_SIZE,
                             senderPipeEnds[i], #send to curr index pipe
                             listenerPipeEnds[i-1], #listen to prev index pipe
-                            SHOW_FITNESS_DATA,
-                            # parent_conn,msgs   
+                            q,
+                            SHOW_FITNESS_DATA, 
                         )
                     )
                 
@@ -137,11 +143,13 @@ if __name__ == '__main__':
                 procArr[i].join()
                 
                 #should cache results from this proc's funct call?
+            islandsIndex = 0
+            while not q.empty():
+                islands[islandsIndex] = q.get()
+                islandsIndex += 1
                             
         #if serial islands
         else:
-            islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=tuple)
-            
             #run sequential islands w/ no migration
             for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
                 #run an islands and cache its resultant fitness data
@@ -155,7 +163,7 @@ if __name__ == '__main__':
                 )
             
             #select island w/ best fitness to plot
-                
+            """
             #init best fitness w/ island 0's best fitness
             bestFitIslandIndex = 0
             bestFitness = islands[bestFitIslandIndex][0]
@@ -174,36 +182,38 @@ if __name__ == '__main__':
                 
             #store traits of best island for plotting
             bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = islands[bestFitIslandIndex]
-                
-            print("Best island's fitness is {}".format(bestFitness))
-                
-            t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
+            """
             
-            #plot fitness data of best sequential island
+        #store traits of best island for plotting
+        bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = FindBestIsland(islands)
             
-            plt.rcParams.update({'font.size': 22})
-            plt.plot(t, bestFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Best Fitness per Iteration for {}'.format(functionEnum))
-            plt.ylabel('Best Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
+        print("Best island's fitness is {}.".format(bestFitness) )
+           
+        #plot fitness data of best island
+    
+        t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
+        
+        plt.rcParams.update({'font.size': 22})
+        plt.plot(t, bestFitnessData) 
+        plt.grid() #add a grid to graph
+        plt.title('Best Fitness per Generation for {}'.format(functionEnum))
+        plt.ylabel('Best Fitness')
+        plt.xlabel('Generation')
+        plt.show()
 
-            #plt.subplot(3, 1, 2)
-            plt.plot(t, avgFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Average Fitness per Iteration for {}'.format(functionEnum))
-            plt.ylabel('Average Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
+        plt.plot(t, avgFitnessData) 
+        plt.grid() #add a grid to graph
+        plt.title('Average Fitness per Generation for {}'.format(functionEnum))
+        plt.ylabel('Average Fitness')
+        plt.xlabel('Generation')
+        plt.show()
 
-            #plt.subplot(3, 1, 3)
-            plt.plot(t, worstFitnessData) 
-            plt.grid() #add a grid to graph
-            plt.title('Worst Fitness per Iteration for {}'.format(functionEnum))
-            plt.ylabel('Worst Fitness')
-            plt.xlabel('Iteration')
-            plt.show()
+        plt.plot(t, worstFitnessData) 
+        plt.grid() #add a grid to graph
+        plt.title('Worst Fitness per Generation for {}'.format(functionEnum))
+        plt.ylabel('Worst Fitness')
+        plt.xlabel('Generation')
+        plt.show()
             
         """
         #Sets cannot have two items with the same value.
