@@ -129,7 +129,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
         
         testDataCount = 1000000
         
-        xIndexRange, prob = SetupHalfNormIntDistr(Implementation_Consts.POPULATION_SIZE)
+        xIndexRange, prob = SetupHalfNormIntDistr(Implementation_Consts.POPULATION_SIZE, stdDev=30)
         
         #take rando nums using the calc'd prob and index range
         randoNums = numpy.random.choice(xIndexRange, size = testDataCount, p = prob)
@@ -179,6 +179,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             #get parents from pop-fitness obj    
             parents = BreedSelection(populationFitness)
             
+            
             #walk thru parents
             for parent in parents:
                 #make sure each parent is actually in the pop
@@ -193,7 +194,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             prevPlottedFigures = plt.gcf().number
             
             #show distr figure for parents
-            BreedSelection(populationFitness, displayDistributionGraph=True)
+            #BreedSelection(populationFitness, displayDistributionGraph=True)
 
             #cache figures gen'd by matplotlib
             #afterPlottedFigures = plt.get_fignums()
@@ -307,6 +308,43 @@ class TestMutateRelated(unittest.TestCase):
             ),
             "A mutation made a trait go out of bounds."
         )
+        
+    def test_SetupHalfNormIntDistrGraphing(self):
+        """
+        Tests the half normal integer distribution #parent indices are drawn from.
+        #Verifies that a lower index number occures more often than a higher index number.
+        """
+        
+        testDataCount = 1000000
+        
+        xIndexRange, prob = SetupHalfNormIntDistr(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, stdDev=1)
+        
+        #take rando nums using the calc'd prob and index range
+        randoNums = numpy.random.choice(xIndexRange, size = testDataCount, p = prob)
+
+        #get count of each unique num gen'd
+        unique, counts = numpy.unique(randoNums, return_counts=True)
+        
+        #pair count of each index in a dict
+        indexCountDict = dict(zip(unique, counts))
+        
+        compIndex1 = 0
+        compIndex2 = int(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS/3)
+        
+        #ensure index 0 occured more often than the comp2 index
+        self.assertGreater(
+            indexCountDict[compIndex1],
+            indexCountDict[compIndex2],
+            "A lower index in the distribution should usually occure more often."
+        )
+        
+        #display distr histogram
+        plt.rcParams.update({'font.size': 22})
+        plt.hist(randoNums, bins = Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
+        plt.title("Likelihood of each trait index being chosen")
+        plt.ylabel("Occurences")
+        plt.xlabel("Trait index")
+        plt.show()
         
 #Only things left to test are fitness graphs and data sorting
             

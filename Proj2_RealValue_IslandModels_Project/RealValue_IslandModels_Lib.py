@@ -267,7 +267,7 @@ def getFitness( individual: IndividualFitness ) -> int:
 
 #region Breeding Functs
 
-def SetupHalfNormIntDistr(pop_size: int) -> tuple:
+def SetupHalfNormIntDistr(pop_size: int, stdDev: int) -> tuple:
     """
     The half normal integer distribution parent indices are drawn from.
 
@@ -279,7 +279,7 @@ def SetupHalfNormIntDistr(pop_size: int) -> tuple:
     #store every number's +/-0.5
     xU, xL = x + 0.5, x - 0.5 
     #determine probability
-    prob = ss.halfnorm.cdf(xU, scale = 30) - ss.halfnorm.cdf(xL, scale = 30) #scale represents inner quartiles
+    prob = ss.halfnorm.cdf(xU, scale = stdDev) - ss.halfnorm.cdf(xL, scale = stdDev) #scale represents inner quartiles
     prob = prob / prob.sum() # normalize the probabilities so their sum is 1
     #decr by 1 to find the index 0-99
     xIndexRange = x - 1
@@ -298,7 +298,7 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
     
     #Using half norm and incr'd to take interval 1-100 then subtr 1 after.
     
-    xIndexRange, prob = SetupHalfNormIntDistr(pop_size)
+    xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
     
     #if overloaded to display distr graph
     if( displayDistributionGraph):
@@ -387,42 +387,58 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
         #use a percentage of the change in bounds as the trait change
         stdDev = boundsChange * (trait_change_percentage / 100)
         
-        #thread safe gauss distr random
-        randoGauss = random.normalvariate(mu=0, sigma=stdDev)
+        #use a half norm int gaussian distr to choose number of traits to mutate
+        xIndexRange, prob = SetupHalfNormIntDistr(num_of_traits, stdDev=1)
+        numOfTraitsToMutate = int( numpy.random.choice(xIndexRange, size = 1, p = prob) ) + 1
         
-        #decide what child trait being mutated + cache it
-        indexBeingMutated = random.randint(0, num_of_traits-1)
-        traitBeingMutated = child[indexBeingMutated]
+        alreadyMutatedIndices = []
         
-        #apply mutation
-        traitBeingMutated += randoGauss
+        for i in range(0, numOfTraitsToMutate):
         
-        #remutate until the trait being mutated is within domain bounds and mutation is nonzero
-        while( traitBeingMutated < lower_bound 
-              or traitBeingMutated > upper_bound 
-              or randoGauss == 0
-            ):
+            #thread safe gauss distr random
+            randoGaussChange = random.normalvariate(mu=0, sigma=stdDev)
             
-            #reset trait being mutated
+            #decide what child trait being mutated + cache it
+            indexBeingMutated = random.randint(0, num_of_traits-1)
+            
+            #while index being mutated had already been mutated
+            while(indexBeingMutated in alreadyMutatedIndices):
+                #choose another index to mutate
+                indexBeingMutated = random.randint(0, num_of_traits-1)
+            
             traitBeingMutated = child[indexBeingMutated]
             
-            #thread safe gauss distr random
-            randoGauss = random.normalvariate(mu=0, sigma=stdDev)
-            
             #apply mutation
-            traitBeingMutated += randoGauss
+            traitBeingMutated += randoGaussChange
             
-        
-        """
-        #clamp new trait to within bounds
-        if( traitBeingMutated < lower_bound):
-            traitBeingMutated = lower_bound
-        elif( traitBeingMutated > upper_bound ):
-            traitBeingMutated = upper_bound
-        """
-        
-        #apply new trait
-        child[indexBeingMutated] = traitBeingMutated
+            #remutate until the trait being mutated is within domain bounds and mutation is nonzero
+            while( traitBeingMutated < lower_bound 
+                or traitBeingMutated > upper_bound 
+                or randoGaussChange == 0
+                ):
+                
+                #reset trait being mutated
+                traitBeingMutated = child[indexBeingMutated]
+                
+                #thread safe gauss distr random
+                randoGaussChange = random.normalvariate(mu=0, sigma=stdDev)
+                
+                #apply mutation
+                traitBeingMutated += randoGaussChange
+                
+            
+            """
+            #clamp new trait to within bounds
+            if( traitBeingMutated < lower_bound):
+                traitBeingMutated = lower_bound
+            elif( traitBeingMutated > upper_bound ):
+                traitBeingMutated = upper_bound
+            """
+            
+            #apply new trait
+            child[indexBeingMutated] = traitBeingMutated
+            
+            alreadyMutatedIndices.append( indexBeingMutated )
         
         #ret true bc mutated
         return True
