@@ -29,7 +29,6 @@ Project Requirements:
 """
 
 from enum import Enum
-import multiprocessing
 import random
 import time
 import numpy
@@ -153,7 +152,7 @@ def SqrdSum( inputArr: numpy.ndarray ) -> float:
 def CosOfTwoPiTrait( trait: float) -> float:
     return numpy.cos(2*numpy.pi*trait)
 
-def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) -> int:
+def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) -> float:
     """
     Evaluates fitness of a single individual according to the GA function passed in.
     Optimal results value is 0. Further from a 0 result means higher fitness.
@@ -368,7 +367,7 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
     """
     Not a guaranteed mutation. 
     Mutation will occur in only 1 in every number of traits of child passed to this function.
-    Peforms mutation through increasing/decreasing the child's trait by an amount depending on the bounds.  
+    Peforms mutation through increasing/decreasing the child's trait by trait_change_percentage depending on the bounds.  
     Returns true if mutation done.
     Returns false if mutation not done.
     """
@@ -382,10 +381,6 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
         #cache bounds
         lower_bound, upper_bound = functionBounds
         
-        #decide what child trait being mutated + cache it
-        indexBeingMutated = random.randint(0, num_of_traits-1)
-        traitBeingMutated = child[indexBeingMutated]
-        
         #change based on bounds
         boundsChange = abs(upper_bound) + abs(lower_bound)
         
@@ -394,6 +389,10 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
         
         #thread safe gauss distr random
         randoGauss = random.normalvariate(mu=0, sigma=stdDev)
+        
+        #decide what child trait being mutated + cache it
+        indexBeingMutated = random.randint(0, num_of_traits-1)
+        traitBeingMutated = child[indexBeingMutated]
         
         #apply mutation
         traitBeingMutated += randoGauss
