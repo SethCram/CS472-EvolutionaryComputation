@@ -215,7 +215,7 @@ class IndividualFitness:
     fitness: int
 
 def getFitness( individual: IndividualFitness ) -> int:
-        return individual.fitness
+    return individual.fitness
     
 #endregion Fitness Functs and Class
 
@@ -417,7 +417,7 @@ def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int)
     xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
     
     #randomly select immigrant indices
-    immigrantIndices = numpy.random.choice(xIndexRange, size = desiredImmigrants-1, p = prob)
+    immigrantIndices = numpy.random.choice(xIndexRange, size = desiredImmigrants, p = prob)
     
     immigrants = [None] * desiredImmigrants
     
@@ -593,38 +593,50 @@ def RunIsland(
         #localPopFitness = populationFitness[migration_size:]
             
         #sort in ascending order by fitness (low/good to high/bad)
-        localPopFitness.sort(key=getFitness)
+        #localPopFitness.sort(key=getFitness)
         
         #recombo local and migrant pop
         #populationFitness = populationFitness[:migration_size] + localPopFitness
         
-        #if doing parallel island model and curr generation is on a migration interval (or first gen)
-        if( parallel_island_model and j % (migration_interval-1) == 0 ):
-            #take migrant sized section of most fit individuals
-            #migrationPopFit = populationFitness[migration_size:migration_size*2]
+        #if using island model
+        if(parallel_island_model):
             
-            #choose migrants and store their fitness
-            migrationPopFit = ImmigrantSelection(localPopFitness, desiredImmigrants=migration_size)
-            
-            #pipe it over to the next population
-            sender_conn.send(migrationPopFit)
-            
-            #pipe a keyword to get the listener to stop listening
-            
-            #listen for more pipe data #until the stop listening keyword is seen
-            while True:
-                recvdMigrationPopFit = listener_conn.recv()
-                if( recvdMigrationPopFit != None):
-                    break
-            
-            #use the recieved migrants to replace the old ones at the front/most fit of the pop
+            #if migration interval or 0th gen
+            if( j % (migration_interval-1) == 0 ):
+                #create new migrant pop
+                
+                #sort in ascending order by fitness (low/good to high/bad)
+                localPopFitness.sort(key=getFitness)
+                
+                #take migrant sized section of most fit individuals
+                #migrationPopFit = populationFitness[migration_size:migration_size*2]
+                
+                #choose migrants and store their fitness
+                migrationPopFit = ImmigrantSelection(localPopFitness, desiredImmigrants=migration_size)
+                
+                #pipe it over to the next population
+                sender_conn.send(migrationPopFit)
+                
+                #pipe a keyword to get the listener to stop listening
+                
+                #listen for more pipe data 
+                while True:
+                    recvdMigrationPopFit = listener_conn.recv()
+                    if( recvdMigrationPopFit != None):
+                        break
+                
+                #use the recieved migrants to replace the old ones at the front/most fit of the pop
 
-            #recombo local and migrant pop
+            #recombo new local and migrant pop
             populationFitness = recvdMigrationPopFit + localPopFitness #recvdMigrationPopFit.tolist() + localPopFitness.tolist()  #numpy.concatenate( (recvdMigrationPopFit, localPopFitness) )
             #sort resultant mixed pop
             populationFitness.sort(key=getFitness)
+                        
         #if not running parrallel island model
-        elif( parallel_island_model == False):
+        else:
+            #sort in ascending order by fitness (low/good to high/bad)
+            localPopFitness.sort(key=getFitness)
+            
             #local pop is our only pop
             populationFitness = localPopFitness
 

@@ -38,7 +38,7 @@ import multiprocessing
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-PARRALLEL_ISLAND_MODEL = False
+PARRALLEL_ISLAND_MODEL = True
 
 #sol number
 solNumber = 0
