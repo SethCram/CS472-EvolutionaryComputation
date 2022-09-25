@@ -54,8 +54,11 @@ class Implementation_Consts():
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
     NUMBER_OF_ISLANDS = 3
-    MIGRATION_INTERVAL = 3 
+    MIGRATION_INTERVAL = 5
     MIGRATION_SIZE = 6
+    assert MIGRATION_SIZE % 2 == 0, "Need to save an even number of migrants for new generation."
+    assert MIGRATION_SIZE < POPULATION_SIZE, "Can't select more migrants than individuals in the population."
+
 
 #region GA enum and dicts
     
@@ -398,9 +401,8 @@ def ParentSelection( populationFitness: list, displayDistributionGraph = False )
 
 def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int) -> list:
     """
-    Returns the desired number of immigrants. 
-    The first immigrant is always the most fit individual from populationFitness, 
-    provided that it's already sorted in ascending order.
+    Returns the desired number of immigrants using a fitness proportionate selection.  
+    provideD that the passed in populationFitness is already sorted in ascending order.
 
     Args:
         populationFitness (numpy.ndarray): sorted in ascending order
@@ -419,10 +421,7 @@ def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int)
     
     immigrants = [None] * desiredImmigrants
     
-    #copy most fit individual over into immigrants
-    immigrants[0] = populationFitness[0]
-    
-    i = 1
+    i = 0
     for immigrantIndex in immigrantIndices:
         #make sure indices within array range
         assert immigrantIndex < pop_size
