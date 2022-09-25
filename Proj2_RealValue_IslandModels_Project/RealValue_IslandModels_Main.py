@@ -38,7 +38,7 @@ import multiprocessing
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-PARRALLEL_ISLAND_MODEL = True
+PARRALLEL_ISLAND_MODEL = False
 
 #sol number
 solNumber = 0
@@ -178,7 +178,10 @@ if __name__ == '__main__':
         t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
         
         plt.rcParams.update({'font.size': 22})
-        plt.title('Worst, Average, and Best Fitness per Generation for {}'.format(functionEnum))
+        if(PARRALLEL_ISLAND_MODEL):
+            plt.title('Best Island {} Fitness Data'.format(functionEnum))
+        else:
+            plt.title('Best Population {} Fitness Data'.format(functionEnum))
         
         plt.plot(t, worstFitnessData, label='Worst Fitness') 
         plt.grid() #add a grid to graph
