@@ -161,7 +161,7 @@ def getFitness( individual: IndividualFitness ) -> int:
 """
 Create a selection function which will select two parents from the population, this should be slightly weighted towards more fit individuals.
 """
-def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
+def ParentSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.

@@ -101,10 +101,10 @@ for k in range(0, DESIRED_SOLUTIONS):
             #if first iteration 
             #if( j == 0 ):
                 #select 2 parents from pop + show distr graph
-            #    parents = BreedSelection(population, displayDistributionGraph=True)
+            #    parents = ParentSelection(population, displayDistributionGraph=True)
             #else:
                 #select 2 parents from pop
-            parents = BreedSelection(population)
+            parents = ParentSelection(population)
 
             #crossover breed parents to get children
             children = CrossoverBreed(parents[0], parents[1])

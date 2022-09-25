@@ -133,10 +133,10 @@ while( len(solutions) < POSSIBLE_SOLUTIONS ):
             #if first iteration 
             #if( j == 0 ):
                 #select 2 parents from pop + show distr graph
-            #    parents = BreedSelection(populationFitness, displayDistributionGraph=True)
+            #    parents = ParentSelection(populationFitness, displayDistributionGraph=True)
             #else:
                 #select 2 parents from pop
-            parents = BreedSelection(populationFitness)
+            parents = ParentSelection(populationFitness)
 
             #crossover breed parents to get children
             children = CrossoverBreed(parents[0].individual, parents[1].individual)

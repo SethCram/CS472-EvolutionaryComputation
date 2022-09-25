@@ -54,11 +54,10 @@ class Implementation_Consts():
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
     NUMBER_OF_ISLANDS = 3
-    MIGRATION_INTERVAL = 3
-    
+    MIGRATION_INTERVAL = 3 
     MIGRATION_SIZE = 6
-    #assert MIGRATION_SIZE % 2 == 0, "Need to use an even migration size."
-    #assert MIGRATION_SIZE < POPULATION_SIZE, "Can't migrate more individuals than those in the population."
+
+#region GA enum and dicts
     
 class GA_Functions(Enum):
     """
@@ -91,55 +90,7 @@ functionInputTargetDict = {
     GA_Functions.Griewangk: 0 
 }
 
-#region Creation Functs
-
-def CreateRandomIndividual( num_of_traits: int, lower_bound_inclusive: float, upper_bound_inclusive: float) -> numpy.ndarray:
-    """
-    Args:
-        num_of_traits (int): Creates an individual with passed in number of random traits.
-        lower_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
-        upper_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
-
-    Returns:
-        numpy.ndarray: Individual containing the requested number of genes inclusively between the specified ranges.
-    """
-    
-    #init arr w/ enough space
-    individual = numpy.empty( num_of_traits, dtype=float )
-    
-    #walk thru each trait of individual
-    for traitIndex in range(0, num_of_traits):
-        #find new trait using random coords within bounds
-        newTrait = random.uniform(lower_bound_inclusive, upper_bound_inclusive)
-        
-        #fill that individual's trait
-        individual[traitIndex] = newTrait
-        
-    return individual
-
-def CreatePopulation( functionBounds: tuple, population_size: int, individuals_num_of_traits: int) -> numpy.ndarray:
-    """
-    Args:
-        functionToOptimize (GA_Function): Used to determine domain of input data.
-        population_size (int): Determines how many random individuals created.
-        individuals_num_of_traits (int): Tells how many traits each individual should have.
-
-    Returns:
-        numpy.ndarray: Population created.
-    """
-    
-    #init pop
-    population = numpy.array( [None] * population_size )
-    
-    lower_bound, upper_bound = functionBounds
-    
-    #populate every member of population
-    for individualIndex in range(0, population_size):
-        population[individualIndex] = CreateRandomIndividual( individuals_num_of_traits, lower_bound, upper_bound)
-    
-    return population
-
-#endregion Creation Functs
+#endregion GA enum and dicts
 
 #region Fitness Functs and Class
 
@@ -265,7 +216,89 @@ def getFitness( individual: IndividualFitness ) -> int:
     
 #endregion Fitness Functs and Class
 
-#region Breeding Functs
+#region Creation Functs
+
+def CreateRandomIndividual( num_of_traits: int, lower_bound_inclusive: float, upper_bound_inclusive: float) -> numpy.ndarray:
+    """
+    Args:
+        num_of_traits (int): Creates an individual with passed in number of random traits.
+        lower_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
+        upper_bound_inclusive (float): Used with a uniform distribution to randomly generate genes as floats.
+
+    Returns:
+        numpy.ndarray: Individual containing the requested number of genes inclusively between the specified ranges.
+    """
+    
+    #init arr w/ enough space
+    individual = numpy.empty( num_of_traits, dtype=float )
+    
+    #walk thru each trait of individual
+    for traitIndex in range(0, num_of_traits):
+        #find new trait using random coords within bounds
+        newTrait = random.uniform(lower_bound_inclusive, upper_bound_inclusive)
+        
+        #fill that individual's trait
+        individual[traitIndex] = newTrait
+        
+    return individual
+
+def CreatePopulation( functionBounds: tuple, population_size: int, individuals_num_of_traits: int) -> numpy.ndarray:
+    """
+    Args:
+        functionToOptimize (GA_Function): Used to determine domain of input data.
+        population_size (int): Determines how many random individuals created.
+        individuals_num_of_traits (int): Tells how many traits each individual should have.
+
+    Returns:
+        numpy.ndarray: Population created.
+    """
+    
+    #init pop
+    population = numpy.array( [None] * population_size )
+    
+    lower_bound, upper_bound = functionBounds
+    
+    #populate every member of population
+    for individualIndex in range(0, population_size):
+        population[individualIndex] = CreateRandomIndividual( individuals_num_of_traits, lower_bound, upper_bound)
+    
+    return population
+
+def CreateLocalPopulationFitness(functionEnum: GA_Functions, population: numpy.ndarray, solutions: set) -> list:
+    """
+    Creates local population fitness pairings array.
+    Adds to the Solutions set if a solution is encountered during fitness evaluation.
+
+    Args:
+        functionEnum (GA_Functions): For fitness evaluation
+        solutions (set): Pre-existing solutions
+
+    Returns:
+        list: local population fitness pairings array
+    """
+    local_pop_size = len(population)
+    
+    localPopulationFitness = [None] * local_pop_size
+    
+    #walk thru each individual in local pop
+    for i in range(0, local_pop_size):
+        individual = population[i]
+        individualFitness = EvalFitness(functionEnum, individual)
+        
+        #store individual w/ their fitness data
+        # don't need diff case for par island model as long as migration size 0 by default
+        #populationFitness[popFitnessIndex] = IndividualFitness( individual, individualFitness )
+        #popFitnessIndex += 1
+        localPopulationFitness[i] = IndividualFitness( individual, individualFitness )
+        
+        #if added individual is a sol
+        if(individualFitness == 0):
+            solutions.add(tuple(individual))
+    
+    return localPopulationFitness
+
+#endregion Creation Functs
+
 
 def SetupHalfNormIntDistr(pop_size: int, stdDev: int) -> tuple:
     """
@@ -286,7 +319,35 @@ def SetupHalfNormIntDistr(pop_size: int, stdDev: int) -> tuple:
     
     return xIndexRange, prob
 
-def BreedSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
+def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
+    """
+    A 1-point crossover.
+    Assumes both parents have the same number of traits.
+    Returns two children contained in a numpy array.
+    """
+    
+    num_of_traits = len(parent1)
+    
+    #init child arrs
+    child1 = numpy.empty( num_of_traits, dtype=float ) #need to be below 0 or above 7
+    child2 = numpy.empty( num_of_traits, dtype=float )
+    children = numpy.array( [None] * 2 )
+    
+    #crossover point
+    xpoint = random.randrange(1,num_of_traits-1) #don't want at very beginning or end bc don't wanna copy parents
+    
+    #take 1 point crossover
+    child1 = numpy.concatenate( (parent1[:xpoint], parent2[xpoint:]) )
+    child2 = numpy.concatenate( (parent2[:xpoint], parent1[xpoint:]) )
+    #place childs into children arr
+    children[0] = child1
+    children[1] = child2
+
+    return children
+
+#region Selection Functs
+
+def ParentSelection( populationFitness: list, displayDistributionGraph = False ) -> numpy.ndarray:
     """
     Assumes population array is sorted in ascending fitness order (low/good to high/bad).
     Returns an array of two parents.
@@ -335,33 +396,72 @@ def BreedSelection( populationFitness: list, displayDistributionGraph = False ) 
     #return chosen parents
     return parentsArray
 
-def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
+def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int) -> list:
     """
-    A 1-point crossover.
-    Assumes both parents have the same number of traits.
-    Returns two children contained in a numpy array.
+    Returns the desired number of immigrants. 
+    The first immigrant is always the most fit individual from populationFitness, 
+    provided that it's already sorted in ascending order.
+
+    Args:
+        populationFitness (numpy.ndarray): sorted in ascending order
+
+    Returns:
+        list: IndividualFitness pairings
     """
     
-    num_of_traits = len(parent1)
+    #store pop size
+    pop_size = len(populationFitness)
     
-    #init child arrs
-    child1 = numpy.empty( num_of_traits, dtype=float ) #need to be below 0 or above 7
-    child2 = numpy.empty( num_of_traits, dtype=float )
-    children = numpy.array( [None] * 2 )
+    xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
     
-    #crossover point
-    xpoint = random.randrange(1,num_of_traits-1) #don't want at very beginning or end bc don't wanna copy parents
+    #randomly select immigrant indices
+    immigrantIndices = numpy.random.choice(xIndexRange, size = desiredImmigrants-1, p = prob)
     
-    #take 1 point crossover
-    child1 = numpy.concatenate( (parent1[:xpoint], parent2[xpoint:]) )
-    child2 = numpy.concatenate( (parent2[:xpoint], parent1[xpoint:]) )
-    #place childs into children arr
-    children[0] = child1
-    children[1] = child2
+    immigrants = [None] * desiredImmigrants
+    
+    #copy most fit individual over into immigrants
+    immigrants[0] = populationFitness[0]
+    
+    i = 1
+    for immigrantIndex in immigrantIndices:
+        #make sure indices within array range
+        assert immigrantIndex < pop_size
+        
+        #copy over into immigrants arr
+        immigrants[i] = populationFitness[int(immigrantIndex)]
+        i += 1    
+    
+    return immigrants
 
-    return children
+def FindBestIsland(islands: numpy.ndarray) -> tuple:
+    """
+    Determines the best island through comparing each island's best fit individual.
 
-#endregion Breeding Functs
+    Returns:
+        tuple: bestFitness, bestFitnessData, avgFitnessData, worstFitnessData
+    """
+    num_of_islands = len(islands)
+    
+    #init best fitness w/ island 0's best fitness
+    bestFitIslandIndex = 0
+    bestFitness = islands[bestFitIslandIndex][0]
+    
+    #run thru islands
+    for i in range(0, num_of_islands):
+        #cache curr island's best fitness
+        currIslandBestFitness = islands[i][0]
+        
+        #if curr island's best fitness is better than best fitness
+        if( currIslandBestFitness < bestFitness ):
+            #replace best fitness
+            bestFitness = currIslandBestFitness
+            #copy over curr island's index to save as best island index
+            bestFitIslandIndex = i
+
+    #return best fit island
+    return islands[bestFitIslandIndex]
+
+#endregion Selection Functs
 
 def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage: float ) -> bool:
     """
@@ -445,104 +545,6 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
     
     #return false bc didn't mutate
     return False      
-
-def FindBestIsland(islands: numpy.ndarray) -> tuple:
-    """
-    Determines the best island through comparing each island's best fit individual.
-
-    Returns:
-        tuple: bestFitness, bestFitnessData, avgFitnessData, worstFitnessData
-    """
-    num_of_islands = len(islands)
-    
-    #init best fitness w/ island 0's best fitness
-    bestFitIslandIndex = 0
-    bestFitness = islands[bestFitIslandIndex][0]
-    
-    #run thru islands
-    for i in range(0, num_of_islands):
-        #cache curr island's best fitness
-        currIslandBestFitness = islands[i][0]
-        
-        #if curr island's best fitness is better than best fitness
-        if( currIslandBestFitness < bestFitness ):
-            #replace best fitness
-            bestFitness = currIslandBestFitness
-            #copy over curr island's index to save as best island index
-            bestFitIslandIndex = i
-
-    #return best fit island
-    return islands[bestFitIslandIndex]
-
-def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int) -> list:
-    """
-    Returns the desired number of immigrants. 
-    The first immigrant is always the most fit individual from populationFitness, 
-    provided that it's already sorted in ascending order.
-
-    Args:
-        populationFitness (numpy.ndarray): sorted in ascending order
-
-    Returns:
-        list: IndividualFitness pairings
-    """
-    
-    #store pop size
-    pop_size = len(populationFitness)
-    
-    xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
-    
-    #randomly select immigrant indices
-    immigrantIndices = numpy.random.choice(xIndexRange, size = desiredImmigrants-1, p = prob)
-    
-    immigrants = [None] * desiredImmigrants
-    
-    #copy most fit individual over into immigrants
-    immigrants[0] = populationFitness[0]
-    
-    i = 1
-    for immigrantIndex in immigrantIndices:
-        #make sure indices within array range
-        assert immigrantIndex < pop_size
-        
-        #copy over into immigrants arr
-        immigrants[i] = populationFitness[int(immigrantIndex)]
-        i += 1    
-    
-    return immigrants
-    
-def CreateLocalPopulationFitness(functionEnum: GA_Functions, population: numpy.ndarray, solutions: set) -> list:
-    """
-    Creates local population fitness pairings array.
-    Adds to the Solutions set if a solution is encountered during fitness evaluation.
-
-    Args:
-        functionEnum (GA_Functions): For fitness evaluation
-        solutions (set): Pre-existing solutions
-
-    Returns:
-        list: local population fitness pairings array
-    """
-    local_pop_size = len(population)
-    
-    localPopulationFitness = [None] * local_pop_size
-    
-    #walk thru each individual in local pop
-    for i in range(0, local_pop_size):
-        individual = population[i]
-        individualFitness = EvalFitness(functionEnum, individual)
-        
-        #store individual w/ their fitness data
-        # don't need diff case for par island model as long as migration size 0 by default
-        #populationFitness[popFitnessIndex] = IndividualFitness( individual, individualFitness )
-        #popFitnessIndex += 1
-        localPopulationFitness[i] = IndividualFitness( individual, individualFitness )
-        
-        #if added individual is a sol
-        if(individualFitness == 0):
-            solutions.add(tuple(individual))
-    
-    return localPopulationFitness
 
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
@@ -656,7 +658,7 @@ def RunIsland(
                 #not applying elitism
                 else:
                     #find parents
-                    parents = BreedSelection(populationFitness)
+                    parents = ParentSelection(populationFitness)
 
                     #crossover breed parents to get children
                     children = CrossoverBreed(parents[0], parents[1])
