@@ -178,23 +178,23 @@ if __name__ == '__main__':
         t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
         
         plt.rcParams.update({'font.size': 22})
-        plt.plot(t, bestFitnessData) 
+        plt.title('Worst, Average, and Best Fitness per Generation for {}'.format(functionEnum))
+        
+        plt.plot(t, worstFitnessData, label='Worst Fitness') 
         plt.grid() #add a grid to graph
-        plt.title('Best Fitness per Generation for {}'.format(functionEnum))
-        plt.ylabel('Best Fitness')
-        plt.xlabel('Generation')
-        #plt.show()
-
-        plt.plot(t, avgFitnessData) 
+ 
+        plt.plot(t, avgFitnessData, label='Average Fitness') 
         plt.grid() #add a grid to graph
-        plt.title('Average Fitness per Generation for {}'.format(functionEnum))
-        plt.ylabel('Average Fitness')
-        plt.xlabel('Generation')
-        #plt.show()
-
-        plt.plot(t, worstFitnessData) 
+        
+        plt.plot(t, bestFitnessData, label='Best Fitness') 
         plt.grid() #add a grid to graph
-        plt.title('Worst Fitness per Generation for {}'.format(functionEnum))
-        plt.ylabel('Worst Fitness')
+        
+        plt.legend()
+        plt.ylabel('Fitness')
         plt.xlabel('Generation')
-        #plt.show()
+        
+        for fitnessData in (bestFitnessData, avgFitnessData, worstFitnessData):
+            plt.annotate('%0.7f' % fitnessData.min(), xy=(1, fitnessData.max()), xytext=(8, 0), 
+                        xycoords=('axes fraction', 'data'), textcoords='offset points')
+        
+        plt.show()

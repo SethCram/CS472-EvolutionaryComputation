@@ -46,14 +46,14 @@ class Implementation_Consts():
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     POSSIBLE_SOLUTIONS = 1
-    GENERATIONS_PER_RUN = 1000  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
+    GENERATIONS_PER_RUN = 200  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
     TRAIT_CHANGE_PERCENTAGE = 3
     
     PARENTS_SAVED_FOR_ELITISM = 2
     assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
     assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
 
-    NUMBER_OF_ISLANDS = 3
+    NUMBER_OF_ISLANDS = 5
     MIGRATION_INTERVAL = 5
     MIGRATION_SIZE = 6
     assert MIGRATION_SIZE % 2 == 0, "Need to save an even number of migrants for new generation."
@@ -401,8 +401,8 @@ def ParentSelection( populationFitness: list, displayDistributionGraph = False )
 
 def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int) -> list:
     """
-    Returns the desired number of immigrants using a fitness proportionate selection.  
-    provideD that the passed in populationFitness is already sorted in ascending order.
+    Returns the desired number of immigrants using selecting best individual and rest uniformly random.  
+    Provided that the passed in populationFitness is already sorted in ascending order.
 
     Args:
         populationFitness (numpy.ndarray): sorted in ascending order
@@ -414,6 +414,7 @@ def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int)
     #store pop size
     pop_size = len(populationFitness)
     
+    """
     xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
     
     #randomly select immigrant indices
@@ -422,6 +423,21 @@ def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int)
     immigrants = [None] * desiredImmigrants
     
     i = 0
+    for immigrantIndex in immigrantIndices:
+        #make sure indices within array range
+        assert immigrantIndex < pop_size
+        
+        #copy over into immigrants arr
+        immigrants[i] = populationFitness[int(immigrantIndex)]
+        i += 1    
+    """
+    
+    immigrantIndices = numpy.random.uniform(low=0, high=pop_size-0.50, size=desiredImmigrants-1 )
+    
+    immigrants = [None] * desiredImmigrants
+    
+    immigrants[0] = populationFitness[0]
+    i = 1
     for immigrantIndex in immigrantIndices:
         #make sure indices within array range
         assert immigrantIndex < pop_size
@@ -758,9 +774,6 @@ def RunIsland(
         results_queue.put( results_tuple )
         
         #may have to implement a queue lock so sub proc's won't write to queue at same time
-        
-        #cancel sub proc so won't wait till queue emptied
-        #multiprocessing.JoinableQueue.cancel_join_thread()
 
     #return the results queue
     return results_tuple
