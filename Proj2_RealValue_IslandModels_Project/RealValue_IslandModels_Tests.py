@@ -309,7 +309,7 @@ class TestMutateRelated(unittest.TestCase):
             "A mutation made a trait go out of bounds."
         )
         
-    def test_SetupHalfNormIntDistrGraphing(self):
+    def test_SetupHalfNormIntDistr(self):
         """
         Tests the half normal integer distribution #parent indices are drawn from.
         #Verifies that a lower index number occures more often than a higher index number.
@@ -337,7 +337,7 @@ class TestMutateRelated(unittest.TestCase):
             indexCountDict[compIndex2],
             "A lower index in the distribution should usually occure more often."
         )
-        
+        """
         #display distr histogram
         plt.rcParams.update({'font.size': 22})
         plt.hist(randoNums, bins = Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
@@ -345,6 +345,7 @@ class TestMutateRelated(unittest.TestCase):
         plt.ylabel("Occurences")
         plt.xlabel("Trait index")
         plt.show()
+        """
         
 #Only things left to test are fitness graphs and data sorting
             

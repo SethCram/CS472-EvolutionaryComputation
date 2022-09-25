@@ -57,8 +57,8 @@ class Implementation_Consts():
     MIGRATION_INTERVAL = 3
     
     MIGRATION_SIZE = 6
-    assert MIGRATION_SIZE % 2 == 0, "Need to use an even migration size."
-    assert MIGRATION_SIZE < POPULATION_SIZE, "Can't migrate more individuals than those in the population."
+    #assert MIGRATION_SIZE % 2 == 0, "Need to use an even migration size."
+    #assert MIGRATION_SIZE < POPULATION_SIZE, "Can't migrate more individuals than those in the population."
     
 class GA_Functions(Enum):
     """
@@ -474,6 +474,76 @@ def FindBestIsland(islands: numpy.ndarray) -> tuple:
     #return best fit island
     return islands[bestFitIslandIndex]
 
+def ImmigrantSelection(populationFitness: numpy.ndarray, desiredImmigrants: int) -> list:
+    """
+    Returns the desired number of immigrants. 
+    The first immigrant is always the most fit individual from populationFitness, 
+    provided that it's already sorted in ascending order.
+
+    Args:
+        populationFitness (numpy.ndarray): sorted in ascending order
+
+    Returns:
+        list: IndividualFitness pairings
+    """
+    
+    #store pop size
+    pop_size = len(populationFitness)
+    
+    xIndexRange, prob = SetupHalfNormIntDistr(pop_size, stdDev=30)
+    
+    #randomly select immigrant indices
+    immigrantIndices = numpy.random.choice(xIndexRange, size = desiredImmigrants-1, p = prob)
+    
+    immigrants = [None] * desiredImmigrants
+    
+    #copy most fit individual over into immigrants
+    immigrants[0] = populationFitness[0]
+    
+    i = 1
+    for immigrantIndex in immigrantIndices:
+        #make sure indices within array range
+        assert immigrantIndex < pop_size
+        
+        #copy over into immigrants arr
+        immigrants[i] = populationFitness[int(immigrantIndex)]
+        i += 1    
+    
+    return immigrants
+    
+def CreateLocalPopulationFitness(functionEnum: GA_Functions, population: numpy.ndarray, solutions: set) -> list:
+    """
+    Creates local population fitness pairings array.
+    Adds to the Solutions set if a solution is encountered during fitness evaluation.
+
+    Args:
+        functionEnum (GA_Functions): For fitness evaluation
+        solutions (set): Pre-existing solutions
+
+    Returns:
+        list: local population fitness pairings array
+    """
+    local_pop_size = len(population)
+    
+    localPopulationFitness = [None] * local_pop_size
+    
+    #walk thru each individual in local pop
+    for i in range(0, local_pop_size):
+        individual = population[i]
+        individualFitness = EvalFitness(functionEnum, individual)
+        
+        #store individual w/ their fitness data
+        # don't need diff case for par island model as long as migration size 0 by default
+        #populationFitness[popFitnessIndex] = IndividualFitness( individual, individualFitness )
+        #popFitnessIndex += 1
+        localPopulationFitness[i] = IndividualFitness( individual, individualFitness )
+        
+        #if added individual is a sol
+        if(individualFitness == 0):
+            solutions.add(tuple(individual))
+    
+    return localPopulationFitness
+
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
     generations: int, num_of_traits: int, parents_elitism_saves: int, 
@@ -491,7 +561,7 @@ def RunIsland(
     worstFitnessData = numpy.empty(generations, dtype=float )
     bestFitnessData = numpy.empty( generations, dtype=float )
     avgFitnessData = numpy.empty( generations, dtype=float )
-    populationFitness = [None] * pop_size
+    #populationFitness = [None] * pop_size
     
     #Sets cannot have two items with the same value.
     solutions = set()
@@ -514,35 +584,26 @@ def RunIsland(
     #run for desired generations
     for j in range(0, generations ):
 
-        popFitnessIndex = migration_size
+        #popFitnessIndex = migration_size
 
-        #walk thru each individual in local pop
-        for i in range(0, local_population_size):
-            individual = population[i]
-            individualFitness = EvalFitness(functionEnum, individual)
-            
-            #store individual w/ their fitness data
-            # don't need diff case for par island model as long as migration size 0 by default
-            populationFitness[popFitnessIndex] = IndividualFitness( individual, individualFitness )
-            popFitnessIndex += 1
-            
-            #if added individual is a sol
-            if(individualFitness == 0):
-                solutions.add(tuple(individual))
+        localPopFitness = CreateLocalPopulationFitness(functionEnum, population, solutions)
         
         #cache local pop fitness
-        localPopFitness = populationFitness[migration_size:]
+        #localPopFitness = populationFitness[migration_size:]
             
         #sort in ascending order by fitness (low/good to high/bad)
         localPopFitness.sort(key=getFitness)
         
         #recombo local and migrant pop
-        populationFitness = populationFitness[:migration_size] + localPopFitness
+        #populationFitness = populationFitness[:migration_size] + localPopFitness
         
         #if doing parallel island model and curr generation is on a migration interval (or first gen)
         if( parallel_island_model and j % (migration_interval-1) == 0 ):
             #take migrant sized section of most fit individuals
-            migrationPopFit = populationFitness[migration_size:migration_size*2]
+            #migrationPopFit = populationFitness[migration_size:migration_size*2]
+            
+            #choose migrants and store their fitness
+            migrationPopFit = ImmigrantSelection(localPopFitness, desiredImmigrants=migration_size)
             
             #pipe it over to the next population
             sender_conn.send(migrationPopFit)
@@ -558,7 +619,13 @@ def RunIsland(
             #use the recieved migrants to replace the old ones at the front/most fit of the pop
 
             #recombo local and migrant pop
-            populationFitness = recvdMigrationPopFit + localPopFitness
+            populationFitness = recvdMigrationPopFit + localPopFitness #recvdMigrationPopFit.tolist() + localPopFitness.tolist()  #numpy.concatenate( (recvdMigrationPopFit, localPopFitness) )
+            #sort resultant mixed pop
+            populationFitness.sort(key=getFitness)
+        #if not running parrallel island model
+        elif( parallel_island_model == False):
+            #local pop is our only pop
+            populationFitness = localPopFitness
 
         #print(populationFitness)
 
@@ -578,7 +645,7 @@ def RunIsland(
             
             popIndex = 0
             
-            #Create a whole new pop from prev pop as parents
+            #Create a whole new local pop from prev pop as parents
             for k in range(0, int(local_population_size/2)):
                 
                 #if less children than parents saved for elitism

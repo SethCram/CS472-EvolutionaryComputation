@@ -54,7 +54,7 @@ import multiprocessing
 SHOW_FITNESS_DATA = False
 MAX_ATTEMPTS_PER_ALG = 1
 
-PARRALLEL_ISLAND_MODEL = False
+PARRALLEL_ISLAND_MODEL = True
 
 #sol number
 solNumber = 0
@@ -199,21 +199,21 @@ if __name__ == '__main__':
         plt.title('Best Fitness per Generation for {}'.format(functionEnum))
         plt.ylabel('Best Fitness')
         plt.xlabel('Generation')
-        plt.show()
+        #plt.show()
 
         plt.plot(t, avgFitnessData) 
         plt.grid() #add a grid to graph
         plt.title('Average Fitness per Generation for {}'.format(functionEnum))
         plt.ylabel('Average Fitness')
         plt.xlabel('Generation')
-        plt.show()
+        #plt.show()
 
         plt.plot(t, worstFitnessData) 
         plt.grid() #add a grid to graph
         plt.title('Worst Fitness per Generation for {}'.format(functionEnum))
         plt.ylabel('Worst Fitness')
         plt.xlabel('Generation')
-        plt.show()
+        #plt.show()
             
         """
         #Sets cannot have two items with the same value.
