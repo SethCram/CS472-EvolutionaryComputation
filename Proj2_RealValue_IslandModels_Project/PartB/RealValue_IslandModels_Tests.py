@@ -239,7 +239,7 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             immigrants = ImmigrantSelection(populationFitness, desiredImmigrants=Implementation_Consts.MIGRATION_SIZE)
             
             #verify number of immigrants desired was created
-            self.assertEquals( len(immigrants), Implementation_Consts.MIGRATION_SIZE )
+            self.assertEqual( len(immigrants), Implementation_Consts.MIGRATION_SIZE )
                         
             #walk thru immigrants
             for migrant in immigrants:
@@ -388,6 +388,36 @@ class TestMutateRelated(unittest.TestCase):
         """
         
 #Only things left to test are fitness graphs and data sorting
+         
+class TestNichingRelated(unittest.TestCase):
+    def test_Crowding(self):
+        pass
+
+    def test_DistanceTweenIndividuals(self):
+        """
+        Ensures a negative distance isn't generated 
+        and that two of the same individuals are 0 distance apart.
+        """
+        
+        individual1 = CreateRandomIndividual(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, 0, 1)
+        individual2 = CreateRandomIndividual(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS, -1, 0)
+        
+        dist = GetDistTweenIndividuals(individual1, individual2)
+        
+        #make sure dist not negative
+        self.assertLessEqual( 0, dist, "Distance can't be negative.")
+        
+        
+        individual1 = numpy.zeros(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
+        individual2 = numpy.zeros(Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS)
+        
+        dist = GetDistTweenIndividuals(individual1, individual2)
+        
+        #make sure dist is 0
+        self.assertEqual( 0, dist, "Distance should be 0.")
+
+    def test_FitnessSharing(self):
+        pass
             
 if __name__ == '__main__':
     unittest.main()

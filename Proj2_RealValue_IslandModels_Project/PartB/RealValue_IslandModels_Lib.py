@@ -68,6 +68,8 @@ class Implementation_Consts():
     MIGRATION_SIZE = 6
     assert MIGRATION_SIZE % 2 == 0, "Need to save an even number of migrants for new generation."
     assert MIGRATION_SIZE < POPULATION_SIZE, "Can't select more migrants than individuals in the population."
+    
+    MAX_CHILDREN_KILLED = 10
 
 
 #region GA enum and dicts
@@ -332,7 +334,7 @@ def SetupHalfNormIntDistr(pop_size: int, stdDev: int) -> tuple:
     
     return xIndexRange, prob
 
-def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.ndarray:
+def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) ->  numpy.ndarray:
     """
     A 1-point crossover.
     Assumes both parents have the same number of traits.
@@ -342,10 +344,9 @@ def CrossoverBreed( parent1: numpy.ndarray, parent2: numpy.ndarray ) -> numpy.nd
     num_of_traits = len(parent1)
     
     #init child arrs
-    child1 = numpy.empty( num_of_traits, dtype=float ) #need to be below 0 or above 7
-    child2 = numpy.empty( num_of_traits, dtype=float )
+    #child1 = numpy.empty( num_of_traits, dtype=float ) #need to be below 0 or above 7
+    #child2 = numpy.empty( num_of_traits, dtype=float )
     children = numpy.array( [None] * 2 )
-    
     #crossover point
     xpoint = random.randrange(1,num_of_traits-1) #don't want at very beginning or end bc don't wanna copy parents
     
@@ -571,12 +572,87 @@ def Mutate( functionBounds: tuple, child: numpy.ndarray, trait_change_percentage
     #return false bc didn't mutate
     return False      
 
+def GetDistTweenIndividuals(individual1: numpy.ndarray, individual2: numpy.ndarray) -> float:
+
+    #make sure both individual's have same number of traits
+    assert len(individual1) == len(individual2)
+    
+    return sum( abs(individual1 - individual2) )
+
+def Survive( child: numpy.ndarray, newGenPopulation: list, desired_pop_size: int, distThreshold: float, desiredNumOfNiches: int) -> bool:
+    """Determines whether the provided child survives
+
+    Args:
+        child (numpy.ndarray): 
+        newGenPopulation (list): All entries need to be filled.
+        desired_pop_size (int): used to determine whether child should die.
+        distThreshold (float): used to determine how many other individuals within range of child.
+        desiredNumOfNiches (int): used to determine whether child should die.
+
+    Returns:
+        bool: whether the provided child survives
+    """
+    #assumes child and population individuals have same number of traits
+    
+    num_of_traits = len(child)
+    
+    new_gen_pop_size = len(newGenPopulation)
+    
+    if( desiredNumOfNiches <= 1):
+        return True
+    
+    #calc individuals allowed within each niche 
+    individuals_within_each_niche = int( desired_pop_size / desiredNumOfNiches )
+    
+    individualsWithinChildThreshold = 0
+    
+    #walk thru new gen pop
+    for individual in newGenPopulation: 
+        
+        distFromChild = GetDistTweenIndividuals(child, individual)
+            
+        #if individual's dist from child is within threshold range (exclusive)
+        if( distFromChild < distThreshold):
+            #add to count
+            individualsWithinChildThreshold += 1
+            
+    #return whether individuals within child threshold is less than num of individuals within each niche
+    return individuals_within_each_niche > individualsWithinChildThreshold
+
+    #higher # of individuals within threshold range, higher chance child doesn't survive?
+    
+def CreateChildren(populationFitness: numpy.ndarray, functionBounds: tuple) -> numpy.ndarray:
+    """Create two children through selecting two parents, crossing them over, and mutating the children.
+
+    Args:
+        populationFitness (numpy.ndarray): array of individual-fitness object pairings
+        functionBounds (tuple): lower_bound_inclusive, upper_bound_inclusive
+
+    Returns:
+        numpy.ndarray: children
+    """
+    #find parents
+    parents = ParentSelection(populationFitness)
+
+    #crossover breed parents to get children
+    children = CrossoverBreed(parents[0], parents[1])
+
+    #walk thru children
+    for child in children:
+        #mutate child 
+        Mutate(
+            functionBounds=functionBounds, child=child,  
+            trait_change_percentage=Implementation_Consts.TRAIT_CHANGE_PERCENTAGE
+        )
+        
+    return children
+
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
     generations: int, num_of_traits: int, parents_elitism_saves: int, 
     parallel_island_model = False, migration_interval = 0, migration_size = 0,
     sender_conn = None, listener_conn = None, results_queue = None,
-    show_fitness_plots = False,
+    show_fitness_plots = False, crowding: bool = False, fitness_sharing: bool = False,
     ) -> tuple :
     """Runs an island using the input parameters.
 
@@ -684,6 +760,8 @@ def RunIsland(
             
             popIndex = 0
             
+            population = []
+            
             #Create a whole new local pop from prev pop as parents
             for k in range(0, int(local_population_size/2)):
                 
@@ -694,24 +772,29 @@ def RunIsland(
                 
                 #not applying elitism
                 else:
-                    #find parents
-                    parents = ParentSelection(populationFitness)
-
-                    #crossover breed parents to get children
-                    children = CrossoverBreed(parents[0], parents[1])
-
-                    #walk thru children
-                    for child in children:
-                        #mutate child 
-                        Mutate(
-                            functionBounds=functionBounds, child=child,  
-                            trait_change_percentage=Implementation_Consts.TRAIT_CHANGE_PERCENTAGE
-                        )
+                    #create two new children
+                    children = CreateChildren(populationFitness, functionBounds)
+                    
+                    #if using crowding
+                    if(crowding):
+                        #walk thru newly created children
+                        for i in range(len(children)):
+                            
+                            childrenKilled = 0
+                        
+                            #while child doesn't survive and not enough children killed
+                            while( 
+                                Survive(children[i], population, desired_pop_size=Implementation_Consts.POPULATION_SIZE, distThreshold=5, desiredNumOfNiches=4) == False
+                                and childrenKilled <= Implementation_Consts.MAX_CHILDREN_KILLED
+                            ):
+                                childrenKilled += 1
+                                
+                                #create more childen but only use the first one
+                                children[i] = CreateChildren(populationFitness, functionBounds)[0]
                 
-                #walk thru gen'd children
                 for child in children:
-                    #add to new population (reuse old space)
-                    population[popIndex] = child
+                    #add to new population 
+                    population.append( child )
                     
                     popIndex += 1
                 
