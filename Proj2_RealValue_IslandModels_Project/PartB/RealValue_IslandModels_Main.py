@@ -48,7 +48,13 @@ import multiprocessing
     
 SHOW_FITNESS_DATA = False
 
+DEBUGGING = False
 PARRALLEL_ISLAND_MODEL = False
+
+FITNESS_SHARING = False
+CROWDING = False
+
+NUMBER_OF_CONFIGS = 8
 
 #sol number
 solNumber = 0
@@ -57,93 +63,13 @@ islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=tuple)
 
 #guard in the main module to avoid creating subprocesses recursively in Windows.
 if __name__ == '__main__': 
-#loop thru each function and their bounds
+    #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
         
-        #if island model in parrallel
-        if(PARRALLEL_ISLAND_MODEL):
-            
-            #init multi proccing queue
-            q = multiprocessing.Manager().Queue() 
-            
-            #parrallel plots won't show fitness plots (sometimes)
-            
-            procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
-            listenerPipeEnds = []
-            senderPipeEnds = []
-            
-            #walk thru islands
-            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                #init a pipe for each 
-                senderPipePart, listenerPipePart = multiprocessing.Pipe()
-                
-                #store the ends in separate lists
-                senderPipeEnds.append(senderPipePart)
-                listenerPipeEnds.append(listenerPipePart)
-            
-            #walk thru islands
-            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                
-                #special case for start
-                if( i == 0 ):
-                    # creating new proc + add to proc arr
-                    procArr[i] =  multiprocessing.Process(
-                        target=RunIsland, 
-                        args=(
-                            functionEnum, functionBounds, 
-                            Implementation_Consts.POPULATION_SIZE,
-                            Implementation_Consts.GENERATIONS_PER_RUN,
-                            Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                            Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                            PARRALLEL_ISLAND_MODEL,
-                            Implementation_Consts.MIGRATION_INTERVAL,
-                            Implementation_Consts.MIGRATION_SIZE,
-                            senderPipeEnds[i], #send to curr pipe index
-                            listenerPipeEnds[Implementation_Consts.NUMBER_OF_ISLANDS-1], #listen to prev pipe index w/ wrap around
-                            q,
-                            SHOW_FITNESS_DATA,  
-                        )
-                    )
-                #if not start
-                else:
-                    #create new proc + add to proc arr
-                    procArr[i] =  multiprocessing.Process(
-                        target=RunIsland, 
-                        args=(
-                            functionEnum, functionBounds, 
-                            Implementation_Consts.POPULATION_SIZE,
-                            Implementation_Consts.GENERATIONS_PER_RUN,
-                            Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                            Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                            PARRALLEL_ISLAND_MODEL,
-                            Implementation_Consts.MIGRATION_INTERVAL,
-                            Implementation_Consts.MIGRATION_SIZE,
-                            senderPipeEnds[i], #send to curr index pipe
-                            listenerPipeEnds[i-1], #listen to prev index pipe
-                            q,
-                            SHOW_FITNESS_DATA, 
-                        )
-                    )
-                
-            
-            #walk thru islands
-            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                #start each proc
-                procArr[i].start()
-            
-            #walk thru islands
-            for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
-                #wait till each proc finished
-                procArr[i].join()
-            
-            islandsIndex = 0
-            
-            while not q.empty():
-                    islands[islandsIndex] = q.get()
-                    islandsIndex += 1
-                            
-        #if serial islands
-        else:
+        #for i in range(NUMBER_OF_CONFIGS):
+        
+        #if debugging, run islands local and seq
+        if(DEBUGGING):
             #run sequential islands w/ no migration
             for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
                 #run an islands and cache its resultant fitness data
@@ -152,31 +78,136 @@ if __name__ == '__main__':
                     Implementation_Consts.POPULATION_SIZE,
                     Implementation_Consts.GENERATIONS_PER_RUN,
                     Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
-                    Implementation_Consts.PARENTS_SAVED_FOR_ELITISM,
-                    show_fitness_plots=SHOW_FITNESS_DATA,
+                    Implementation_Consts.PAIRS_OF_PARENTS_SAVED_FOR_ELITISM,
+                    show_fitness_plots=SHOW_FITNESS_DATA, crowding=CROWDING, fitness_sharing=FITNESS_SHARING
                 )
+        #not debugging, so run in parrallel
+        else:
+            #if island model in parrallel
+            if(PARRALLEL_ISLAND_MODEL):
+                
+                #init multi proccing queue
+                q = multiprocessing.Manager().Queue() 
+                
+                #parrallel plots won't show fitness plots (sometimes)
+                
+                procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
+                listenerPipeEnds = []
+                senderPipeEnds = []
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    #init a pipe for each 
+                    senderPipePart, listenerPipePart = multiprocessing.Pipe()
+                    
+                    #store the ends in separate lists
+                    senderPipeEnds.append(senderPipePart)
+                    listenerPipeEnds.append(listenerPipePart)
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    
+                    #special case for start
+                    if( i == 0 ):
+                        # creating new proc + add to proc arr
+                        procArr[i] =  multiprocessing.Process(
+                            target=RunIsland, 
+                            args=(
+                                functionEnum, functionBounds, 
+                                Implementation_Consts.POPULATION_SIZE,
+                                Implementation_Consts.GENERATIONS_PER_RUN,
+                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                                Implementation_Consts.PAIRS_OF_PARENTS_SAVED_FOR_ELITISM,
+                                PARRALLEL_ISLAND_MODEL,
+                                Implementation_Consts.MIGRATION_INTERVAL,
+                                Implementation_Consts.PAIRS_OF_IMMIGRANTS,
+                                senderPipeEnds[i], #send to curr pipe index
+                                listenerPipeEnds[Implementation_Consts.NUMBER_OF_ISLANDS-1], #listen to prev pipe index w/ wrap around
+                                q,
+                                SHOW_FITNESS_DATA, CROWDING, FITNESS_SHARING
+                            )
+                        )
+                    #if not start
+                    else:
+                        #create new proc + add to proc arr
+                        procArr[i] =  multiprocessing.Process(
+                            target=RunIsland, 
+                            args=(
+                                functionEnum, functionBounds, 
+                                Implementation_Consts.POPULATION_SIZE,
+                                Implementation_Consts.GENERATIONS_PER_RUN,
+                                Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                                Implementation_Consts.PAIRS_OF_PARENTS_SAVED_FOR_ELITISM,
+                                PARRALLEL_ISLAND_MODEL,
+                                Implementation_Consts.MIGRATION_INTERVAL,
+                                Implementation_Consts.PAIRS_OF_IMMIGRANTS,
+                                senderPipeEnds[i], #send to curr index pipe
+                                listenerPipeEnds[i-1], #listen to prev index pipe
+                                q,
+                                SHOW_FITNESS_DATA, CROWDING, FITNESS_SHARING
+                            )
+                        )
+                    
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    #start each proc
+                    procArr[i].start()
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    #wait till each proc finished
+                    procArr[i].join()
+                
+                islandsIndex = 0
+                
+                while not q.empty():
+                        islands[islandsIndex] = q.get()
+                        islandsIndex += 1
+            #if parrallel non-migrating islands
+            else:
+                #init multi proccing queue
+                q = multiprocessing.Manager().Queue() 
+                
+                procArr = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=multiprocessing.Process)
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    # creating new proc + add to proc arr
+                    procArr[i] =  multiprocessing.Process(
+                        target=RunIsland, 
+                        args=(
+                            functionEnum, functionBounds, 
+                            Implementation_Consts.POPULATION_SIZE,
+                            Implementation_Consts.GENERATIONS_PER_RUN,
+                            Implementation_Consts.INDIVIDUALS_NUMBER_OF_TRAITS,
+                            Implementation_Consts.PAIRS_OF_PARENTS_SAVED_FOR_ELITISM,
+                            PARRALLEL_ISLAND_MODEL,
+                            Implementation_Consts.MIGRATION_INTERVAL,
+                            Implementation_Consts.PAIRS_OF_IMMIGRANTS,
+                            None, #no migration so don't need send and recieving pipe ends
+                            None, 
+                            q,
+                            SHOW_FITNESS_DATA, CROWDING, FITNESS_SHARING
+                        )
+                    )
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    #start each proc
+                    procArr[i].start()
+                
+                #walk thru islands
+                for i in range(Implementation_Consts.NUMBER_OF_ISLANDS):
+                    #wait till each proc finished
+                    procArr[i].join()
+                
+                islandsIndex = 0
+                
+                while not q.empty():
+                        islands[islandsIndex] = q.get()
+                        islandsIndex += 1
             
-            #select island w/ best fitness to plot
-            """
-            #init best fitness w/ island 0's best fitness
-            bestFitIslandIndex = 0
-            bestFitness = islands[bestFitIslandIndex][0]
-                
-            #run sequential islands w/ no migration
-            for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
-                #cache curr island's best fitness
-                currIslandBestFitness = islands[i][0]
-                
-                #if curr island's best fitness is better than best fitness
-                if( currIslandBestFitness < bestFitness ):
-                    #replace best fitness
-                    bestFitness = currIslandBestFitness
-                    #copy over curr island's index to save as best island index
-                    bestFitIslandIndex = i
-                
-            #store traits of best island for plotting
-            bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = islands[bestFitIslandIndex]
-            """
             
         #store traits of best island for plotting
         bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = FindBestIsland(islands)

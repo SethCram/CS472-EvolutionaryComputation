@@ -58,17 +58,10 @@ class Implementation_Consts():
     POSSIBLE_SOLUTIONS = 1
     GENERATIONS_PER_RUN = 200  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
     TRAIT_CHANGE_PERCENTAGE = 3
-    
-    PARENTS_SAVED_FOR_ELITISM = 2
-    assert PARENTS_SAVED_FOR_ELITISM % 2 == 0, "Need to save an even number of parents for elitism."
-    assert PARENTS_SAVED_FOR_ELITISM < POPULATION_SIZE, "Can't save more parents for elitism than individuals in the population."
-
+    PAIRS_OF_PARENTS_SAVED_FOR_ELITISM = 1
     NUMBER_OF_ISLANDS = 5
     MIGRATION_INTERVAL = 5
-    MIGRATION_SIZE = 6
-    assert MIGRATION_SIZE % 2 == 0, "Need to save an even number of migrants for new generation."
-    assert MIGRATION_SIZE < POPULATION_SIZE, "Can't select more migrants than individuals in the population."
-    
+    PAIRS_OF_IMMIGRANTS = 3
     MAX_CHILDREN_KILLED = 10
 
 
@@ -118,7 +111,7 @@ def SqrdSum( inputArr: numpy.ndarray ) -> float:
 def CosOfTwoPiTrait( trait: float) -> float:
     return numpy.cos(2*numpy.pi*trait)
 
-def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) -> float:
+def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray) -> float:
     """
     Evaluates fitness of a single individual according to the GA function passed in.
     Optimal results value is 0. Further from a 0 result means higher fitness.
@@ -211,9 +204,6 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray ) 
         
         #make sure fitness is positive
         rslt = abs(rslt)
-    
-    #desired val is 0 so should round reals down to 0 if close enough?
-    
     
     #fitness should always be positive             
     return rslt
@@ -621,6 +611,33 @@ def Survive( child: numpy.ndarray, newGenPopulation: list, desired_pop_size: int
 
     #higher # of individuals within threshold range, higher chance child doesn't survive?
     
+def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, sharing_radius: float) -> float:
+    """
+    Calculated the shared fitness for an individual in relation to others in the population.
+    """
+    pop_size = len(popFitness)
+    
+    shSum = 0
+    
+    individualFitness = popFitness[individualsIndexInPopFitness]
+    
+    #walk thru pop
+    for i in range(pop_size):
+        #if not individual evaling SF for
+        if( i != individualsIndexInPopFitness ):
+            #get dist tween individuals
+            distTweenIndividuals = GetDistTweenIndividuals(individualFitness.individual, popFitness[i].individual)
+            
+            #if dist tween individuals is within sharing radius
+            if( distTweenIndividuals < sharing_radius):
+                #calc sh as a number tween 0 and 1 exclusive
+                shSum += (1 - (distTweenIndividuals/sharing_radius))
+                
+    #mult since want lower fitness
+    return individualFitness.fitness * shSum
+                
+
+    
 def CreateChildren(populationFitness: numpy.ndarray, functionBounds: tuple) -> numpy.ndarray:
     """Create two children through selecting two parents, crossing them over, and mutating the children.
 
@@ -649,8 +666,8 @@ def CreateChildren(populationFitness: numpy.ndarray, functionBounds: tuple) -> n
 
 def RunIsland(
     functionEnum: GA_Functions, functionBounds: tuple, pop_size: int, 
-    generations: int, num_of_traits: int, parents_elitism_saves: int, 
-    parallel_island_model = False, migration_interval = 0, migration_size = 0,
+    generations: int, num_of_traits: int, pairs_of_parents_elitism_saves: int, 
+    parallel_island_model = False, migration_interval = 0, pairs_of_immigrants = 0,
     sender_conn = None, listener_conn = None, results_queue = None,
     show_fitness_plots = False, crowding: bool = False, fitness_sharing: bool = False,
     ) -> tuple :
@@ -673,7 +690,7 @@ def RunIsland(
     
     if(parallel_island_model):
         #leave room for migration pop
-        local_population_size = pop_size - migration_size
+        local_population_size = pop_size - pairs_of_immigrants * 2
     else:
         local_population_size = pop_size
     
@@ -691,15 +708,6 @@ def RunIsland(
 
         localPopFitness = CreateLocalPopulationFitness(functionEnum, population, solutions)
         
-        #cache local pop fitness
-        #localPopFitness = populationFitness[migration_size:]
-            
-        #sort in ascending order by fitness (low/good to high/bad)
-        #localPopFitness.sort(key=getFitness)
-        
-        #recombo local and migrant pop
-        #populationFitness = populationFitness[:migration_size] + localPopFitness
-        
         #if using island model
         if(parallel_island_model):
             
@@ -710,11 +718,8 @@ def RunIsland(
                 #sort in ascending order by fitness (low/good to high/bad)
                 localPopFitness.sort(key=getFitness)
                 
-                #take migrant sized section of most fit individuals
-                #migrationPopFit = populationFitness[migration_size:migration_size*2]
-                
                 #choose migrants and store their fitness
-                migrationPopFit = ImmigrantSelection(localPopFitness, desiredImmigrants=migration_size)
+                migrationPopFit = ImmigrantSelection(localPopFitness, desiredImmigrants=pairs_of_immigrants * 2)
                 
                 #pipe it over to the next population
                 sender_conn.send(migrationPopFit)
@@ -730,7 +735,8 @@ def RunIsland(
                 #use the recieved migrants to replace the old ones at the front/most fit of the pop
 
             #recombo new local and migrant pop
-            populationFitness = recvdMigrationPopFit + localPopFitness #recvdMigrationPopFit.tolist() + localPopFitness.tolist()  #numpy.concatenate( (recvdMigrationPopFit, localPopFitness) )
+            populationFitness = recvdMigrationPopFit + localPopFitness 
+            
             #sort resultant mixed pop
             populationFitness.sort(key=getFitness)
                         
@@ -762,35 +768,52 @@ def RunIsland(
             
             population = []
             
-            #Create a whole new local pop from prev pop as parents
-            for k in range(0, int(local_population_size/2)):
-                
-                #if less children than parents saved for elitism
-                if( k < parents_elitism_saves/2):
-                    #apply elitism for next 2 most fit parents
-                    children = populationFitness[k].individual, populationFitness[k+1].individual
-                
-                #not applying elitism
-                else:
-                    #create two new children
-                    children = CreateChildren(populationFitness, functionBounds)
+            #Save parents for elitism 
+            for k in range(0, pairs_of_parents_elitism_saves):
+                #apply elitism for next 2 most fit parents
+                children = populationFitness[k].individual, populationFitness[k+1].individual
+            
+                for child in children:
+                    #add to new population 
+                    population.append( child )
                     
-                    #if using crowding
-                    if(crowding):
-                        #walk thru newly created children
-                        for i in range(len(children)):
-                            
-                            childrenKilled = 0
+                    popIndex += 1
+            
+            #if using FS
+            if(fitness_sharing):
+                #walk thru pop fitness
+                for i in range(local_population_size):
+                    
+                    #redef fitness
+                    populationFitness[i].fitness = CalcSharedFitness(populationFitness, i, sharing_radius=1)
+                    
+                #sort in ascending order by fitness (low/good to high/bad)
+                populationFitness.sort(key=getFitness)
+                
+            pairs_of_children = int(local_population_size/2)
+            
+            #Create rest of whole new local pop from prev pop as parents
+            for j in range(pairs_of_parents_elitism_saves, pairs_of_children):    
+
+                #create two new children
+                children = CreateChildren(populationFitness, functionBounds)
+                
+                #if using crowding
+                if(crowding):
+                    #walk thru newly created children
+                    for i in range(len(children)):
                         
-                            #while child doesn't survive and not enough children killed
-                            while( 
-                                Survive(children[i], population, desired_pop_size=Implementation_Consts.POPULATION_SIZE, distThreshold=5, desiredNumOfNiches=4) == False
-                                and childrenKilled <= Implementation_Consts.MAX_CHILDREN_KILLED
-                            ):
-                                childrenKilled += 1
-                                
-                                #create more childen but only use the first one
-                                children[i] = CreateChildren(populationFitness, functionBounds)[0]
+                        childrenKilled = 0
+                    
+                        #while child doesn't survive and not enough children killed
+                        while( 
+                            Survive(children[i], population, desired_pop_size=Implementation_Consts.POPULATION_SIZE, distThreshold=0.1, desiredNumOfNiches=50) == False
+                            and childrenKilled <= Implementation_Consts.MAX_CHILDREN_KILLED
+                        ):
+                            childrenKilled += 1
+                            
+                            #create more childen but only use the first one
+                            children[i] = CreateChildren(populationFitness, functionBounds)[0]
                 
                 for child in children:
                     #add to new population 
