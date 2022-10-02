@@ -46,7 +46,6 @@ import scipy.stats as ss
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
-
 class Implementation_Consts():
     """
     Unchanging constants useable, but not required, to use this library.
@@ -96,6 +95,18 @@ functionInputTargetDict = {
     GA_Functions.Schwefel2: -420.9687,
     GA_Functions.Ackley: 0,
     GA_Functions.Griewangk: 0 
+}
+
+#iteration number is key, value is IM, FS, CR, graph display str settings
+iterationVarConfig ={
+    0: (False, False, False, ""),
+    1: (True, False, False, ", IM"),
+    2: (False, True, False, ", FS"),
+    3: (False, False, True, ", CR"),
+    4: (True, True, False, ", IM, FS"),
+    5: (True, False, True, ", IM, CR"),
+    6: (False, True, True, ", FS, CR"),
+    7: (True, True, True, ", IM, FS, CR")
 }
 
 #endregion GA enum and dicts
