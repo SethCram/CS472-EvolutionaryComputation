@@ -97,16 +97,16 @@ functionInputTargetDict = {
     GA_Functions.Griewangk: 0 
 }
 
-#iteration number is key, value is IM, FS, CR, graph display str settings
+#iteration number is key, value is IM, FS, CR, graph display str settings, line type str
 iterationVarConfig ={
-    0: (False, False, False, ""),
-    1: (True, False, False, ", IM"),
-    2: (False, True, False, ", FS"),
-    3: (False, False, True, ", CR"),
-    4: (True, True, False, ", IM, FS"),
-    5: (True, False, True, ", IM, CR"),
-    6: (False, True, True, ", FS, CR"),
-    7: (True, True, True, ", IM, FS, CR")
+    0: (False, False, False, "", '-'),
+    1: (True, False, False, ", IM", 'o'),
+    2: (False, True, False, ", FS", '+'),
+    3: (False, False, True, ", CR", ':'),
+    4: (True, True, False, ", IM, FS", '.'),
+    5: (True, False, True, ", IM, CR", '--'),
+    6: (False, True, True, ", FS, CR", 'v'),
+    7: (True, True, True, ", IM, FS, CR", '*')
 }
 
 #endregion GA enum and dicts

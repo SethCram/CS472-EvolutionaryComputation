@@ -48,9 +48,9 @@ import multiprocessing
     
 SHOW_FITNESS_DATA = False
 
-debugging = False
+TESTING = False
 
-#debug settings
+#test settings
 island_model = False
 fitness_sharing = False
 crowding = False
@@ -65,8 +65,8 @@ if __name__ == '__main__':
     #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
         
-        #if debugging, run islands local and seq
-        if(debugging):
+        #if TESTING, run islands local and seq
+        if(TESTING):
             #run sequential islands w/ no migration
             for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
                 #run an islands and cache its resultant fitness data
@@ -78,13 +78,48 @@ if __name__ == '__main__':
                     Implementation_Consts.PAIRS_OF_PARENTS_SAVED_FOR_ELITISM,
                     show_fitness_plots=SHOW_FITNESS_DATA, crowding=crowding, fitness_sharing=fitness_sharing
                 )
-        #not debugging, so auto set vars and run in parrallel
+                
+            #store traits of best island for plotting
+            bestFitness, bestFitnessData, avgFitnessData, worstFitnessData = FindBestIsland(islands)
+                
+            print("Best island's fitness is {}.".format(bestFitness) )
+                
+            t = numpy.arange(0, Implementation_Consts.GENERATIONS_PER_RUN)
+                
+            plt.title('Best {} Fitness Data'.format(functionEnum))
+            displayStr = f'Best {functionEnum} Fitness Data'
+            
+            #plt.title('Best {}' +  + ' Fitness Data'.format(functionEnum))
+            plt.title(displayStr)
+            
+            plt.plot(t, worstFitnessData, label='Worst Fitness') 
+            plt.grid() #add a grid to graph
+    
+            plt.plot(t, avgFitnessData, label='Average Fitness') 
+            plt.grid() #add a grid to graph
+            
+            plt.plot(t, bestFitnessData, label='Best Fitness') 
+            plt.grid() #add a grid to graph
+            
+            plt.legend()
+            plt.ylabel('Fitness')
+            plt.xlabel('Generation')
+            
+            for fitnessData in (bestFitnessData, avgFitnessData, worstFitnessData):
+                plt.annotate('%0.7f' % fitnessData.min(), xy=(1, fitnessData.max()), xytext=(8, 0), 
+                            xycoords=('axes fraction', 'data'), textcoords='offset points')
+            
+            plt.show()
+                
+        #not TESTING, so auto set vars and run in parrallel
         else:
+            num_of_configs = len(iterationVarConfig)
+            
             #walk thru iteration var configs
-            for i in range(len(iterationVarConfig)):
+            for configIndex in range(num_of_configs):
             
                 #set config vars
-                island_model, fitness_sharing, crowding, plotStr = iterationVarConfig[i]
+                island_model, fitness_sharing, crowding, plotStr, lineTypeStr = iterationVarConfig[configIndex]
             
                 #if island model in parrallel
                 if(island_model):
@@ -223,29 +258,43 @@ if __name__ == '__main__':
                 
                 plt.rcParams.update({'font.size': 22})
                 
-                if(debugging):
-                    plt.title('Best {} Fitness Data'.format(functionEnum))
-                else:
-                    displayStr = f'Best {functionEnum}' + plotStr + ' Fitness Data'
+                displayStr = f'Best {functionEnum} Fitness Data'
                     
-                    #plt.title('Best {}' +  + ' Fitness Data'.format(functionEnum))
-                    plt.title(displayStr)
+                #plt.title('Best {}' +  + ' Fitness Data'.format(functionEnum))
+                plt.title(displayStr)
                 
-                plt.plot(t, worstFitnessData, label='Worst Fitness') 
+                plt.plot(t, worstFitnessData, 'b' + lineTypeStr, label= 'Worst Fitness' + plotStr) 
                 plt.grid() #add a grid to graph
         
-                plt.plot(t, avgFitnessData, label='Average Fitness') 
+                plt.plot(t, avgFitnessData, 'g' + lineTypeStr, label='Average Fitness' + plotStr) 
                 plt.grid() #add a grid to graph
                 
-                plt.plot(t, bestFitnessData, label='Best Fitness') 
+                plt.plot(t, bestFitnessData, 'r' + lineTypeStr, label='Best Fitness' + plotStr) 
                 plt.grid() #add a grid to graph
                 
                 plt.legend()
                 plt.ylabel('Fitness')
                 plt.xlabel('Generation')
                 
+                fitnessIndex = 0
+                
+                textSize = 8
+                
+                if(configIndex == 0):
+                    worstWorstFitness = worstFitnessData.max()
+                
                 for fitnessData in (bestFitnessData, avgFitnessData, worstFitnessData):
-                    plt.annotate('%0.7f' % fitnessData.min(), xy=(1, fitnessData.max()), xytext=(8, 0), 
-                                xycoords=('axes fraction', 'data'), textcoords='offset points')
+                    fitnessIndex += 1
+                    
+                    plt.annotate('%0.7f' % fitnessData.min(), xy=(1, worstWorstFitness + textSize/1.2 - configIndex * textSize * 3.5  - fitnessIndex * textSize * 1.2  ), xytext=(textSize, 0), 
+                                xycoords=('axes fraction', 'data'), textcoords='offset points')#, verticalalignment='top')
                 
                 plt.show()
+                
+                #if last config plotted
+                if( 
+                   configIndex == num_of_configs-1 or 
+                   configIndex == int( (num_of_configs-1) / 2 )
+                ): 
+                    #show combo plot  
+                    plt.show()
