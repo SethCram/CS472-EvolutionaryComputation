@@ -116,7 +116,7 @@ if __name__ == '__main__':
             num_of_configs = len(iterationVarConfig)
             
             #walk thru iteration var configs
-            for configIndex in range(num_of_configs):
+            for configIndex in range(0, num_of_configs):
             
                 #set config vars
                 island_model, fitness_sharing, crowding, plotStr, lineTypeStr = iterationVarConfig[configIndex]

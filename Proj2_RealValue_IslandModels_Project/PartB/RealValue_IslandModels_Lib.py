@@ -629,11 +629,11 @@ def Survive( child: numpy.ndarray, newGenPopulation: list, desired_pop_size: int
 def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, sharing_radius: float) -> float:
     """
     Calculated the shared fitness for an individual in relation to others in the population.
-    redef fitness (turning all fitness to 0??)
+    If no individuals within FS range, og fitness is mult'd by 0.1, otherwise it's mult'd by higher than 0.1.
     """
     pop_size = len(popFitness)
     
-    shSum = 0
+    shSum = 0.1
     
     individualFitness = popFitness[individualsIndexInPopFitness]
     
@@ -647,7 +647,10 @@ def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, shar
             #if dist tween individuals is within sharing radius
             if( distTweenIndividuals < sharing_radius):
                 #calc sh as a number tween 0 and 1 exclusive
-                shSum += (1 - (distTweenIndividuals/sharing_radius))
+                shSum += (1 - (distTweenIndividuals/sharing_radius)) #sharing level inside parenthesis
+     
+    #if( shSum == 0 ):
+    #    print("No other individuals within sharing_radius.")
                 
     #mult since want lower fitness
     return individualFitness.fitness * shSum
