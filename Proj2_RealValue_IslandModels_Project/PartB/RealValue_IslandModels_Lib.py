@@ -38,6 +38,7 @@ Project Requirements:
     Do not describe your code structures, but describe the algorithm of your implementation. Plot your results.
 """
 
+import copy
 from enum import Enum
 import random
 import time
@@ -215,6 +216,9 @@ def EvalFitness( functionToOptimize: GA_Functions , individual: numpy.ndarray) -
         
         #make sure fitness is positive
         rslt = abs(rslt)
+    
+    #if(rslt == 0):
+    #    raise ValueError("While evaling fitness, an individual of 0 fitness created.")
     
     #fitness should always be positive             
     return rslt
@@ -625,6 +629,7 @@ def Survive( child: numpy.ndarray, newGenPopulation: list, desired_pop_size: int
 def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, sharing_radius: float) -> float:
     """
     Calculated the shared fitness for an individual in relation to others in the population.
+    redef fitness (turning all fitness to 0??)
     """
     pop_size = len(popFitness)
     
@@ -746,7 +751,7 @@ def RunIsland(
                 #use the recieved migrants to replace the old ones at the front/most fit of the pop
 
             #recombo new local and migrant pop
-            populationFitness = recvdMigrationPopFit + localPopFitness 
+            populationFitness = copy.deepcopy(recvdMigrationPopFit) + copy.deepcopy(localPopFitness) 
             
             #sort resultant mixed pop
             populationFitness.sort(key=getFitness)
@@ -793,9 +798,9 @@ def RunIsland(
             #if using FS
             if(fitness_sharing):
                 #walk thru pop fitness
-                for i in range(local_population_size):
+                for i in range(pop_size):
                     
-                    #redef fitness
+                    #redef fitness (turning all fitness to 0??)
                     populationFitness[i].fitness = CalcSharedFitness(populationFitness, i, sharing_radius=1)
                     
                 #sort in ascending order by fitness (low/good to high/bad)
@@ -837,11 +842,19 @@ def RunIsland(
         
     bestFitness = bestFitnessData[generations-1]
     
+    #if(bestFitness == 0):
+    #    raise ValueError("An individual of 0 fitness found during this island.")
+
+    
     #document best fitness per run
     print(
         "Island resulted in a best fitness of " 
         + str(bestFitness) 
         + " for {} in {} seconds.".format( functionEnum, time.time() - start_time)
+    )
+    
+    print(
+        "Config settings were IM {}, FS {}, CR {}".format(parallel_island_model, fitness_sharing, crowding)
     )
     
     #if no sols found

@@ -48,10 +48,10 @@ import multiprocessing
     
 SHOW_FITNESS_DATA = False
 
-TESTING = False
+TEST_SEQ = False
 
 #test settings
-island_model = False
+#island_model = False
 fitness_sharing = False
 crowding = False
 
@@ -65,8 +65,8 @@ if __name__ == '__main__':
     #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
         
-        #if TESTING, run islands local and seq
-        if(TESTING):
+        #if TEST_SEQ, run islands local and seq
+        if(TEST_SEQ):
             #run sequential islands w/ no migration
             for i in range(0, Implementation_Consts.NUMBER_OF_ISLANDS):
                 #run an islands and cache its resultant fitness data
@@ -111,7 +111,7 @@ if __name__ == '__main__':
             
             plt.show()
                 
-        #not TESTING, so auto set vars and run in parrallel
+        #not TEST_SEQ, so auto set vars and run in parrallel
         else:
             num_of_configs = len(iterationVarConfig)
             
