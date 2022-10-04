@@ -283,7 +283,7 @@ if __name__ == '__main__':
                 if(configIndex == 0):
                     worstWorstFitness = worstFitnessData.max()
                 
-                for fitnessData in (bestFitnessData, avgFitnessData, worstFitnessData):
+                for fitnessData in (worstFitnessData, avgFitnessData, bestFitnessData):
                     fitnessIndex += 1
                     
                     plt.annotate('%0.7f' % fitnessData.min(), xy=(1, worstWorstFitness + textSize/1.2 - configIndex * textSize * 3.5  - fitnessIndex * textSize * 1.2  ), xytext=(textSize, 0), 
