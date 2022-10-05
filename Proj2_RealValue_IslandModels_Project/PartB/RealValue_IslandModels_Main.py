@@ -62,8 +62,15 @@ islands = numpy.empty(Implementation_Consts.NUMBER_OF_ISLANDS, dtype=tuple)
 
 #guard in the main module to avoid creating subprocesses recursively in Windows.
 if __name__ == '__main__': 
+    
+    #i = 0
+    
     #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
+        #skip 0th funct
+        #if(i == 0):
+        #    i += 1
+        #    continue
         
         #if TEST_SEQ, run islands local and seq
         if(TEST_SEQ):
@@ -115,8 +122,12 @@ if __name__ == '__main__':
         else:
             num_of_configs = len(iterationVarConfig)
             
+            overallFitnessData = []
+            
+            startingConfigIndex = 0
+            
             #walk thru iteration var configs
-            for configIndex in range(0, num_of_configs):
+            for configIndex in range(startingConfigIndex, num_of_configs):
             
                 #set config vars
                 island_model, fitness_sharing, crowding, plotStr, lineTypeStr = iterationVarConfig[configIndex]
@@ -280,21 +291,54 @@ if __name__ == '__main__':
                 
                 textSize = 8
                 
-                if(configIndex == 0):
+                currWorstFitnessMax = worstFitnessData.max()
+                
+                #if 1st config
+                if(
+                    configIndex == startingConfigIndex 
+                   or configIndex == int( (num_of_configs-1) / 2 + 1)
+                ):
+                    #init worst worst fit
                     worstWorstFitness = worstFitnessData.max()
+                #if curr worst fitness greater
+                elif( worstWorstFitness < currWorstFitnessMax ):
+                    #replace worst fitness
+                    worstWorstFitness = currWorstFitnessMax
                 
-                for fitnessData in (worstFitnessData, avgFitnessData, bestFitnessData):
-                    fitnessIndex += 1
-                    
-                    plt.annotate('%0.7f' % fitnessData.min(), xy=(1, worstWorstFitness + textSize/1.2 - configIndex * textSize * 3.5  - fitnessIndex * textSize * 1.2  ), xytext=(textSize, 0), 
-                                xycoords=('axes fraction', 'data'), textcoords='offset points')#, verticalalignment='top')
+                #cache this config's fitness data
+                overallFitnessData.append((worstFitnessData, avgFitnessData, bestFitnessData))
                 
-                plt.show()
+                #plt.show()
                 
                 #if last config plotted
                 if( 
                    configIndex == num_of_configs-1 or 
                    configIndex == int( (num_of_configs-1) / 2 )
                 ): 
+                    #walk thru cached fitness data
+                    for oFitnessData in overallFitnessData:
+                        #walk thru worst, avg, best fit
+                        for fitnessData in oFitnessData:
+                            yAnnotatePosition = worstWorstFitness + textSize/1.2 - (worstWorstFitness/10) * fitnessIndex - fitnessIndex * textSize * 1.2
+                        
+                            fitnessIndex += 1
+                            
+                            print('%0.7f' % fitnessData.min())
+                        
+                            #annotate on the RHS 
+                            #plt.annotate('%0.7f' % fitnessData.min(), xy=(1, yAnnotatePosition ), xytext=(textSize, 0), 
+                            #            xycoords=('axes fraction', 'data'), textcoords='offset points')
+                    
+                    #reset cache fit data
+                    overallFitnessData = []
+                    
+                    #reset fit index for annotating
+                    fitnessIndex = 0
+                    
+                    #reset cached worst worst fitness for a new graph
+                    worstWorstFitness = 0
+                    
                     #show combo plot  
                     plt.show()
+                    
+                    pass

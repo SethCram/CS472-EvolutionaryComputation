@@ -55,7 +55,6 @@ class Implementation_Consts():
     #init unchanging constants
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
-    POSSIBLE_SOLUTIONS = 1
     GENERATIONS_PER_RUN = 200  #100: best fit = 0.583 #1000: best fit = 0.27 #10,000: best fit = 0.448??
     TRAIT_CHANGE_PERCENTAGE = 3
     PAIRS_OF_PARENTS_SAVED_FOR_ELITISM = 1
@@ -63,6 +62,9 @@ class Implementation_Consts():
     MIGRATION_INTERVAL = 5
     PAIRS_OF_IMMIGRANTS = 3
     MAX_CHILDREN_KILLED = 10
+    CROWDING_DIST_THRESH = 1
+    CROWDING_NICHES = 30
+    FITNESS_SHARING_RANGE = 1
 
 
 #region GA enum and dicts
@@ -629,11 +631,11 @@ def Survive( child: numpy.ndarray, newGenPopulation: list, desired_pop_size: int
 def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, sharing_radius: float) -> float:
     """
     Calculated the shared fitness for an individual in relation to others in the population.
-    If no individuals within FS range, og fitness is mult'd by 0.1, otherwise it's mult'd by higher than 0.1.
+    If no individuals within FS range, og fitness is kept the same, otherwise it's mult'd by higher than 1.
     """
     pop_size = len(popFitness)
     
-    shSum = 0.1
+    fsSum = 1
     
     individualFitness = popFitness[individualsIndexInPopFitness]
     
@@ -647,13 +649,13 @@ def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, shar
             #if dist tween individuals is within sharing radius
             if( distTweenIndividuals < sharing_radius):
                 #calc sh as a number tween 0 and 1 exclusive
-                shSum += (1 - (distTweenIndividuals/sharing_radius)) #sharing level inside parenthesis
+                fsSum += (1 - (distTweenIndividuals/sharing_radius)) #sharing level inside parenthesis
      
     #if( shSum == 0 ):
     #    print("No other individuals within sharing_radius.")
                 
     #mult since want lower fitness
-    return individualFitness.fitness * shSum
+    return individualFitness.fitness * fsSum
                 
 
     
@@ -804,7 +806,11 @@ def RunIsland(
                 for i in range(pop_size):
                     
                     #redef fitness (turning all fitness to 0??)
-                    populationFitness[i].fitness = CalcSharedFitness(populationFitness, i, sharing_radius=1)
+                    populationFitness[i].fitness = CalcSharedFitness(
+                        populationFitness, 
+                        i, 
+                        sharing_radius=Implementation_Consts.FITNESS_SHARING_RANGE
+                    )
                     
                 #sort in ascending order by fitness (low/good to high/bad)
                 populationFitness.sort(key=getFitness)
@@ -826,7 +832,13 @@ def RunIsland(
                     
                         #while child doesn't survive and not enough children killed
                         while( 
-                            Survive(children[i], population, desired_pop_size=Implementation_Consts.POPULATION_SIZE, distThreshold=0.1, desiredNumOfNiches=50) == False
+                            Survive(
+                                children[i], 
+                                population, 
+                                desired_pop_size=Implementation_Consts.POPULATION_SIZE, 
+                                distThreshold=Implementation_Consts.CROWDING_DIST_THRESH, 
+                                desiredNumOfNiches=Implementation_Consts.CROWDING_NICHES
+                            ) == False
                             and childrenKilled <= Implementation_Consts.MAX_CHILDREN_KILLED
                         ):
                             childrenKilled += 1
