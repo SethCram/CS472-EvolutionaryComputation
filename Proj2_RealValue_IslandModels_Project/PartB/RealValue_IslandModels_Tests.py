@@ -236,10 +236,10 @@ class TestSelectionRelatedMethods(unittest.TestCase):
             populationFitness = CreateLocalPopulationFitness(functionEnum, population, sols)
             
             #get immigrants from pop-fitness obj    
-            immigrants = ImmigrantSelection(populationFitness, desiredImmigrants=Implementation_Consts.MIGRATION_SIZE)
+            immigrants = ImmigrantSelection(populationFitness, desiredImmigrants=Implementation_Consts.PAIRS_OF_IMMIGRANTS * 2)
             
             #verify number of immigrants desired was created
-            self.assertEqual( len(immigrants), Implementation_Consts.MIGRATION_SIZE )
+            self.assertEqual( len(immigrants), Implementation_Consts.PAIRS_OF_IMMIGRANTS * 2 )
                         
             #walk thru immigrants
             for migrant in immigrants:

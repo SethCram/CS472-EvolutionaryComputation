@@ -68,7 +68,7 @@ if __name__ == '__main__':
     #loop thru each function and their bounds
     for functionEnum, functionBounds in functionBoundsDict.items():
         #skip 0th funct
-        #if(i == 0):
+        #if(i <= 0):
         #    i += 1
         #    continue
         
@@ -319,15 +319,15 @@ if __name__ == '__main__':
                     for oFitnessData in overallFitnessData:
                         #walk thru worst, avg, best fit
                         for fitnessData in oFitnessData:
-                            yAnnotatePosition = worstWorstFitness + textSize/1.2 - (worstWorstFitness/10) * fitnessIndex - fitnessIndex * textSize * 1.2
+                            yAnnotatePosition = worstWorstFitness - worstWorstFitness * fitnessIndex / 12
                         
                             fitnessIndex += 1
                             
                             print('%0.7f' % fitnessData.min())
                         
                             #annotate on the RHS 
-                            #plt.annotate('%0.7f' % fitnessData.min(), xy=(1, yAnnotatePosition ), xytext=(textSize, 0), 
-                            #            xycoords=('axes fraction', 'data'), textcoords='offset points')
+                            plt.annotate('%0.7f' % fitnessData.min(), xy=(1, yAnnotatePosition ), xytext=(textSize, 0), 
+                                        xycoords=('axes fraction', 'data'), textcoords='offset points')
                     
                     #reset cache fit data
                     overallFitnessData = []
