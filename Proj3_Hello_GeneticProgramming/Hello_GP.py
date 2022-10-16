@@ -19,25 +19,102 @@ class Operator():
         
 class Individual():
     def __init__(self, initDepth: int, initType: InitType, NT: set, T: set) -> None:
-        
+        #var init
+        self.initType = initType
+        self.initDepth = initDepth
+        self.T = T
+        self.NT = NT
         self.fitness = 0
-        
-        currDepth = 1
-        
+        #funct init
+        self.tree = self.CreateTree()
+       
+    def CreateTree(self) -> list:
+        """Adds a root non-terminal by default.
+
+        Args:
+            initType (InitType): _description_
+
+        Returns:
+            list: Tree nodes
+        """
         nodes = []
+        childrenNodes = []
+        layerNodes = []
         
-        if initType == InitType.GROWTH:
-            nodes.append(anytree.Node(self.RandomSelect(T.union(NT))))
+        layerNodes.append( anytree.Node( "0", operator=random.choice(tuple(NT)) ) )
+        
+        #walk thru each horizontal layer of tree, starting at depth 1 of root
+        for currDepth in range(1, self.initDepth):
             
-            if(nodes[0] in NT):
-                while currDepth < initDepth:
-                    pass
-        elif initType == InitType.FULL:
-            while currDepth < initDepth:
-                nodes.append(anytree.Node(self.RandomSelect(NT)))
-            
+            #walk thru this layer's nodes
+            for i in range(len(layerNodes)):
+                #if layer node is a NT bc it has an operator field
+                if hasattr(layerNodes[i], "operator"):
+                    #for every member of its arity
+                    for j in range(layerNodes[i].operator.arity):
+                        #roll for the chance to create a NT or T node?
+                        
+                        #uniquely name node
+                        #nodeName = f"depth: {currDepth+1}, parent: {i}, child: {j}"
+                        nodeName = currDepth + i + j
+                        nodeName = str(nodeName)
+                        
+                        #specify parent as curr layer node
+                        #parentNode = layerNodes[i]
+                        
+                        #if layer right before last layer, so creating last layer
+                        if currDepth == self.initDepth - 1:
+                            #create a T child node
+                            childrenNodes.append( 
+                                anytree.Node(nodeName, 
+                                operand=random.choice(tuple(self.T)), 
+                                parent=layerNodes[i]) #specify parent as curr layer node
+                            )
+                        #if not creating last layer
+                        else:
+                            if self.initType == InitType.FULL:
+                                #create a NT child node
+                                childrenNodes.append( 
+                                    anytree.Node(nodeName, 
+                                    operator=random.choice(tuple(self.NT)), 
+                                    parent=layerNodes[i]) #specify parent as curr layer node
+                                )
+                            elif self.initType == InitType.GROWTH:
+                                #roll a 50/50 on whether child is T or NT
+                                if numpy.random.randint(0,2) == 0:
+                                     #create a NT child node
+                                    childrenNodes.append( 
+                                        anytree.Node(nodeName, 
+                                        operator=random.choice(tuple(self.NT)), 
+                                        parent=layerNodes[i]) #specify parent as curr layer node
+                                    )
+                                else:
+                                    #create a T child node
+                                    childrenNodes.append( 
+                                        anytree.Node(nodeName, 
+                                        operand=random.choice(tuple(self.T)), 
+                                        parent=layerNodes[i]) #specify parent as curr layer node
+                                    )
+            #add layer nodes to overall nodes before overwrite
+            nodes = copy.deepcopy(nodes) + copy.deepcopy(layerNodes) #+ copy.deepcopy(childrenNodes)
+            #update layer nodes to newly created children nodes
+            layerNodes = []
+            layerNodes = copy.deepcopy(childrenNodes)
+            #reset children nodes
+            childrenNodes = []
+        
+        #copy over the last layer's nodes too
+        nodes = nodes + copy.deepcopy(layerNodes)
+        
         for pre, fill, node in anytree.RenderTree(nodes[0]):
-            print("%s%s" % (pre, node.name))
+            if hasattr(node, "operator"):
+                print("%s%s %s %s" % (pre, node.name, fill, node.operator.funct))
+            if hasattr(node, "operand"):
+                print("%s%s %s %s" % (pre, node.name, fill, node.operand))
+        
+        print(f"Node count: {len(nodes)}")
+        
+        return nodes
        
     def RandomSelect(selSet: set):
         return selSet[numpy.random.randint(0, len(selSet))]
@@ -48,15 +125,17 @@ class Individual():
         return f"{self.name}({self.age})"  
 
 class Population():
-    def __init__(self, populationSize: int, initDepth: int, initType: InitType, mutationStdDev: float, NT: set, T: set) -> None:
+    def __init__(self, populationSize: int, initDepth: int, mutationStdDev: float, NT: set, T: set) -> None:
         self.populationSize = populationSize
-        self.population = [Individual(initDepth, initType, NT, T) for _ in range(self.populationSize)]
         self.avgFitness = 0
         self.bestFitness = 0
         self.worstFitness = 0
         
-        for i in range(self.population):
-            self.population[i].fitness = self.EvaluateFitness(self.population[i]) 
+        #create individuals of half FULL and half GROWTH
+        self.individuals = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))]
+        
+        for i in range(len(self.individuals)):
+            self.individuals[i].fitness = self.EvaluateFitness(self.individuals[i]) 
         
     def EvaluateFitness(self, individual: Individual):
         return 0 #(x**2 + y - 11)**2 + (x + y**2 -7)**2
@@ -109,16 +188,18 @@ class Population():
         return f"{self.name}({self.age})"
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, initType: InitType, mutationStdDev: float, NT: set, T: set):
+    def __init__(self, populationSize: int, initDepth: int, mutationStdDev: float, NT: set, T: set):
         self.populationSize = populationSize
         self.mutationStdDev = mutationStdDev
         #self.crossoverType
         #self.selectionType
         self.CurrentGeneration = 0
-        self.population = Population(populationSize, initDepth, initType, mutationStdDev, NT, T)
+        
         self.avgFitness = []
         self.bestFitness = []
         self.worstFitness = []
+        
+        self.population = Population(populationSize, initDepth, 0.2, NT, T)
             
     def runGen(self) -> Population:
         pass
@@ -136,7 +217,6 @@ if __name__ == '__main__':
     }
     
     T = {1,2,3}
-    """
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     GENERATIONS_PER_RUN = 300  
@@ -149,18 +229,27 @@ if __name__ == '__main__':
     CROWDING_DIST_THRESH = 1
     CROWDING_NICHES = 30
     FITNESS_SHARING_RANGE = 1
+    
+    INIT_DEPTH = 3
+    
+    GP(
+        populationSize=POPULATION_SIZE,
+        initDepth=INIT_DEPTH,
+        mutationStdDev=0.2,
+        NT=NT,
+        T=T
+    )
+    
     """
     nodes = []
     childrenNodes = []
     layerNodes = []
     
-    layerNodes.append( anytree.Node( "root", operator=random.choice(tuple(NT)) ) )
-    #print(layerNodes[0].operator.funct(1, 2))
-        
-    initDepth = 3
+    layerNodes.append( anytree.Node( "0", operator=random.choice(tuple(NT)) ) )
     
     #walk thru each horizontal layer of tree, starting at depth 1 of root
     for currDepth in range(1, initDepth):
+        
         #walk thru this layer's nodes
         for i in range(len(layerNodes)):
             #if layer node is a NT bc it has an operator field
@@ -170,10 +259,12 @@ if __name__ == '__main__':
                     #roll for the chance to create a NT or T node?
                     
                     #uniquely name node
-                    nodeName = f"{currDepth}, {i}, {j}"
+                    #nodeName = f"depth: {currDepth+1}, parent: {i}, child: {j}"
+                    nodeName = currDepth + i + j
+                    nodeName = str(nodeName)
                     
                     #specify parent as curr layer node
-                    parentNode = layerNodes[i]
+                    #parentNode = layerNodes[i]
                     
                     #if layer right before last layer, so creating last layer
                     if currDepth == initDepth - 1:
@@ -181,23 +272,32 @@ if __name__ == '__main__':
                         childrenNodes.append( 
                             anytree.Node(nodeName, 
                             operand=random.choice(tuple(T)), 
-                            parent=parentNode)
+                            parent=layerNodes[i]) #specify parent as curr layer node
                         )
                     else:
                         #create a NT child node
                         childrenNodes.append( 
                             anytree.Node(nodeName, 
                             operator=random.choice(tuple(NT)), 
-                            parent=parentNode)
+                            parent=layerNodes[i]) #specify parent as curr layer node
                         )
         #add layer nodes to overall nodes before overwrite
-        nodes = nodes + copy.deepcopy(layerNodes)
+        nodes = copy.deepcopy(nodes) + copy.deepcopy(layerNodes) #+ copy.deepcopy(childrenNodes)
         #update layer nodes to newly created children nodes
+        layerNodes = []
         layerNodes = copy.deepcopy(childrenNodes)
+        #reset children nodes
+        childrenNodes = []
+    
+    #copy over the last layer's nodes too
+    nodes = nodes + copy.deepcopy(layerNodes)
     
     for pre, fill, node in anytree.RenderTree(nodes[0]):
-        print("%s%s" % (pre, node.name))
-            
+        if hasattr(node, "operator"):
+            print("%s%s %s" % (pre, node.name, node.operator.funct))
+        if hasattr(node, "operand"):
+            print("%s%s %s" % (pre, node.name, node.operand))
+    
     print(len(nodes))
-            
-    #GP()
+    print(nodes)
+    """
