@@ -163,17 +163,63 @@ class Individual():
 def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
-class Population():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set) -> None:
+class GP():
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set):
         self.populationSize = populationSize
-
-        #create individuals of half FULL and half GROWTH
-        self.individuals = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))]
+        self.initDepth = initDepth
+        self.NT = NT
+        self.T = T
+        #self.crossoverType
+        #self.selectionType
+        self.currentGeneration = 0
         
-        self.worstFitness = max( self.individuals, key=getFitness ).fitness
-        self.avgFitness = sum(self.individuals, key=getFitness ) / self.populationSize
-        self.bestFitness = min( self.individuals, key=getFitness ).fitness
+        self.population = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))] #Population(self.populationSize, self.initDepth, self.NT, self.T)
         
+        #init fitness lists w/ starting pop's fitness vals
+        self.avgFitness = [self.GetAvgFitness()]
+        self.bestFitness = [self.GetBestFitness()]
+        self.worstFitness = [self.GetWorstFitness()] 
+           
+    def RunGen(self) -> None:
+        #create new pop
+        self.CreateNextGeneration()
+        
+        #store newly created pops fitness fields
+        self.avgFitness.append( self.GetAvgFitness() ) 
+        self.worstFitness.append( self.GetWorstFitness() ) 
+        self.bestFitness.append( self.GetBestFitness() )
+        
+        #advance gen count
+        self.currentGeneration += 1
+   
+    def CreateNextGeneration(self) ->None:
+        #ensure individuals sorted in ascending order
+        self.OrderPopulationByFitness()
+        #make sure new pop empty
+        newPopulation = []
+        
+        #walk thru half pop
+        for _ in range(int(self.populationSize/2)):
+            #select parents
+            parent1, parent2 = self.SelectParents()
+            #do crossover
+            child1, child2 = self.Crossover(parent1, parent2)
+            #add new children to next gen pop
+            newPopulation.append(child1)
+            newPopulation.append(child2)
+            
+        #don't needa deep copy bc newPopulation wiped out w/ leave funct
+        self.population = newPopulation
+   
+    def GetBestFitness(self) -> float:
+        return max( self.population, key=getFitness ).fitness
+    
+    def GetWorstFitness(self) -> float:
+        return sum(self.population, key=getFitness ) / self.populationSize
+    
+    def GetAvgFitness(self) -> float:
+        return min( self.population, key=getFitness ).fitness
+    
     def Crossover(self, parent1: Individual, parent2: Individual) -> tuple:
         """80% of time NT crossover, 20% of time T crossover. 
         Never chooses the root node to do crossover with.
@@ -235,7 +281,7 @@ class Population():
         
         return child1, child2
     
-    def ParentSelection(self) -> tuple:
+    def SelectParents(self) -> tuple:
         xIndexRange, prob = self.SetupHalfNormIntDistr(self.populationSize, stdDev=30)
     
         #if overloaded to display distr graph
@@ -257,7 +303,7 @@ class Population():
     
         return self.population[parent1Index], self.population[parent2Index]
     
-    def SetupHalfNormIntDistr(pop_size: int, stdDev: int) -> tuple:
+    def SetupHalfNormIntDistr(self, pop_size: int, stdDev: int) -> tuple:
         """
         The half normal integer distribution parent indices are drawn from.
 
@@ -276,41 +322,9 @@ class Population():
     
         return xIndexRange, prob
     
-    def OrderIndividualsByFitness(self):
+    def OrderPopulationByFitness(self):
         #sort in descending order
-        self.individuals.sort(key=getFitness)
-    
-    def __str__(self):
-        return f"{self.name}({self.age})"
-
-class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set):
-        self.populationSize = populationSize
-        self.initDepth = initDepth
-        self.NT = NT
-        self.T = T
-        #self.crossoverType
-        #self.selectionType
-        self.currentGeneration = 0
-        
-        self.population = Population(self.populationSize, self.initDepth, self.NT, self.T)
-        
-        #init fitness lists w/ starting pop's fitness vals
-        self.avgFitness = [self.population.avgFitness]
-        self.bestFitness = [self.population.bestFitness]
-        self.worstFitness = [self.population.worstFitness] 
-           
-    def RunGen(self) -> None:
-        #create new pop
-        self.population = Population(self.populationSize, self.initDepth, self.NT, self.T)
-        
-        #store newly created pops fitness fields
-        self.avgFitness.append( self.population.avgFitness ) 
-        self.worstFitness.append( self.population.worstFitness ) 
-        self.bestFitness.append( self.population.bestFitness )
-        
-        #advance gen count
-        self.currentGeneration += 1
+        self.population.sort(key=getFitness)
     
     def PlotGenerationalFitness(self):
         t = numpy.arange(0, self.currentGeneration+1)
@@ -369,6 +383,11 @@ if __name__ == '__main__':
     
     INIT_DEPTH = 4
     
+    #test individual class
+    individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T)
+    individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T)
+    
+    #test GP
     treeGP = GP(
         populationSize=POPULATION_SIZE,
         initDepth=INIT_DEPTH,
