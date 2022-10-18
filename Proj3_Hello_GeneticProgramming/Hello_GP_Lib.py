@@ -7,12 +7,24 @@ import multiprocessing
 import time
 import scipy.stats as ss
 import anytree
+from functools import reduce
+import operator as OPER
 
-def IF(conditional, trueRslt, falseRslt):
+def IF(ops):
+    conditional, trueRslt, falseRslt = ops[0], ops[1], ops[2]
     if conditional:
         return trueRslt
     else:
         return falseRslt
+ 
+def SUBTRACT(ops):
+    reduce(OPER.sub, ops)
+
+def MULTIPLY(ops):
+    reduce(OPER.mul, ops)
+    
+def DIVIDE(ops):
+    return ops[0] / ops[1]
 
 class InitType(Enum):
     GROWTH = 0
@@ -44,16 +56,35 @@ class Individual():
         Evaluates the individual's tree.
         """
         
+        tree_size = len(self.tree)
         
-        
-        #walk backwards up a tree
-        #for node in reversed(self.tree):
-        #for node in self.tree:
+        #walk thru every node in tree
+        for i in range(1, tree_size+1):
+            #start walking up tree from bot
+            currNode = self.tree[-i]
             
-            #assume parent is NT
-            #rslt = node.parent.operator.funct()
+            operands = []
+            
+            #if T or NT that's already been eval'd
+            if (currNode.type == NodeType.TERMINAL or 
+                (currNode.type == NodeType.NONTERMINAL and currNode.evaluated == True)):
+                #walk thru children parent of curr node
+                for parentsChild in currNode.parent.children:
+                    #if parentsChild = T
+                    if( parentsChild.type == NodeType.TERMINAL ):
+                        operands.append(parentsChild.operand)
+                    #if parentsChild = NT and eval'd
+                    elif( parentsChild.type == NodeType.NONTERMINAL and currNode.evaluated == True ):
+                        operands.append(parentsChild.result)
+                
+                if currNode.parent.operator.arity == len(operands):
+                    currNode.parent.result = currNode.parent.operator.funct(operands)
+                    currNode.parent.evaluated = True
         
-        pass        
+        #make sure tree been eval'd
+        assert self.tree[0].evaluated == True    
+        
+        return self.tree[0].result
         
         #return (x**2 + y - 11)**2 + (x + y**2 -7)**2
        
@@ -367,10 +398,10 @@ class GP():
         return f"{self.benchmark_funct} with pop size ({self.popSize})"
 
 NT = {
-        Operator(funct=numpy.add, arity=2), 
-        Operator(funct=numpy.subtract, arity=2), 
-        Operator(funct=numpy.multiply, arity=2), 
-        Operator(funct=numpy.divide, arity=2), #division by zero always yields zero in integer arithmetic.
+        Operator(funct=sum, arity=2), 
+        Operator(funct=SUBTRACT, arity=2), 
+        Operator(funct=MULTIPLY, arity=2), 
+        Operator(funct=DIVIDE, arity=2), #division by zero always yields zero in integer arithmetic.
         Operator(funct=numpy.abs, arity=1),
         Operator(funct=IF, arity=3),
     }
