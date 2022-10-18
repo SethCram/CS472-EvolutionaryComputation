@@ -37,6 +37,7 @@ class Individual():
         self.fitness = 0
         #funct init
         self.tree = self.CreateTree()
+        self.fitness = self.EvaluateFitness()
        
     def EvaluateFitness(self):
         """
@@ -141,34 +142,37 @@ class Individual():
         #copy over the last layer's nodes too
         nodes = nodes + copy.deepcopy(layerNodes)
         
-        for pre, fill, node in anytree.RenderTree(nodes[0]):
-            if hasattr(node, "operator"):
-                print("%s%s %s %s" % (pre, node.name, fill, node.operator.funct))
-            if hasattr(node, "operand"):
-                print("%s%s %s %s" % (pre, node.name, fill, node.operand))
+        #for pre, fill, node in anytree.RenderTree(nodes[0]):
+        #    if hasattr(node, "operator"):
+        #        print("%s%s %s %s" % (pre, node.name, fill, node.operator.funct))
+        #    if hasattr(node, "operand"):
+        #        print("%s%s %s %s" % (pre, node.name, fill, node.operand))
+        
+        print(anytree.RenderTree(nodes[0]))
         
         print(f"Node count: {len(nodes)}")
         
         return nodes
        
-    def Mutate(self):
-        num_of_nodes = len(self.tree)
+    #def Mutate(self):
+    #    num_of_nodes = len(self.tree)
     
     def __str__(self):
         return f"{self.name}({self.age})"  
 
+def getFitness( individual: Individual ) -> int:
+    return individual.fitness
+
 class Population():
     def __init__(self, populationSize: int, initDepth: int, NT: set, T: set) -> None:
         self.populationSize = populationSize
-        self.avgFitness = 0
-        self.bestFitness = 0
-        self.worstFitness = 0
-        
+
         #create individuals of half FULL and half GROWTH
         self.individuals = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))]
         
-        #for i in range(len(self.individuals)):
-        #    self.individuals[i].fitness = self.EvaluateFitness(self.individuals[i]) 
+        self.worstFitness = max( self.individuals, key=getFitness ).fitness
+        self.avgFitness = sum(self.individuals, key=getFitness ) / self.populationSize
+        self.bestFitness = min( self.individuals, key=getFitness ).fitness
         
     def Crossover(self, parent1: Individual, parent2: Individual) -> tuple:
         """80% of time NT crossover, 20% of time T crossover. 
@@ -272,27 +276,68 @@ class Population():
     
         return xIndexRange, prob
     
+    def OrderIndividualsByFitness(self):
+        #sort in descending order
+        self.individuals.sort(key=getFitness)
+    
     def __str__(self):
         return f"{self.name}({self.age})"
 
 class GP():
     def __init__(self, populationSize: int, initDepth: int, NT: set, T: set):
         self.populationSize = populationSize
+        self.initDepth = initDepth
+        self.NT = NT
+        self.T = T
         #self.crossoverType
         #self.selectionType
         self.currentGeneration = 0
         
-        self.avgFitness = []
-        self.bestFitness = []
-        self.worstFitness = []
+        self.population = Population(self.populationSize, self.initDepth, self.NT, self.T)
         
-        self.population = Population(populationSize, initDepth, 0.2, NT, T)
-            
-    def runGen(self) -> Population:
+        #init fitness lists w/ starting pop's fitness vals
+        self.avgFitness = [self.population.avgFitness]
+        self.bestFitness = [self.population.bestFitness]
+        self.worstFitness = [self.population.worstFitness] 
+           
+    def RunGen(self) -> None:
+        #create new pop
+        self.population = Population(self.populationSize, self.initDepth, self.NT, self.T)
         
+        #store newly created pops fitness fields
+        self.avgFitness.append( self.population.avgFitness ) 
+        self.worstFitness.append( self.population.worstFitness ) 
+        self.bestFitness.append( self.population.bestFitness )
+        
+        #advance gen count
         self.currentGeneration += 1
-        
-        pass
+    
+    def PlotGenerationalFitness(self):
+        t = numpy.arange(0, self.currentGeneration+1)
+            
+        plt.rcParams.update({'font.size': 22})
+        plt.plot(t, self.bestFitness) 
+        plt.grid() 
+        plt.title('Best Fitness per Generation')
+        plt.ylabel('Best Fitness')
+        plt.xlabel('Generation')
+        plt.show()
+
+        #plt.subplot(3, 1, 2)
+        plt.plot(t, self.avgFitness) 
+        plt.grid() 
+        plt.title('Average Fitness per Generation')
+        plt.ylabel('Average Fitness')
+        plt.xlabel('Generation')
+        plt.show()
+
+        #plt.subplot(3, 1, 3)
+        plt.plot(t, self.worstFitness) 
+        plt.grid() 
+        plt.title('Worst Fitness per Generation')
+        plt.ylabel('Worst Fitness')
+        plt.xlabel('Generation')
+        plt.show()
     
     def __str__(self):
         return f"{self.benchmark_funct} with pop size ({self.popSize})"
@@ -323,9 +368,13 @@ if __name__ == '__main__':
     
     INIT_DEPTH = 4
     
-    GP(
+    treeGP = GP(
         populationSize=POPULATION_SIZE,
         initDepth=INIT_DEPTH,
         NT=NT,
         T=T
     )
+    
+    for _ in range(GENERATIONS_PER_RUN):
+    
+        treeGP.RunGen()
