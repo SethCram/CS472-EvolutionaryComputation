@@ -342,8 +342,7 @@ class GP():
     def __str__(self):
         return f"{self.benchmark_funct} with pop size ({self.popSize})"
 
-if __name__ == '__main__': 
-    NT = {
+NT = {
         Operator(funct=numpy.add, arity=2), 
         Operator(funct=numpy.subtract, arity=2), 
         Operator(funct=numpy.multiply, arity=2), 
@@ -352,7 +351,9 @@ if __name__ == '__main__':
         Operator(funct=IF, arity=3),
     }
     
-    T = {1,2,3} #no idea how to assign a range of vals every call
+T = {1,2,3}
+
+if __name__ == '__main__': 
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     GENERATIONS_PER_RUN = 300  
