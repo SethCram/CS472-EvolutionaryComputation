@@ -44,6 +44,8 @@ class Individual():
         Evaluates the individual's tree.
         """
         
+        
+        
         #walk backwards up a tree
         #for node in reversed(self.tree):
         #for node in self.tree:
@@ -69,10 +71,7 @@ class Individual():
         layerNodes = []
         
         layerNodes.append( 
-            anytree.Node( 
-            "0", 
-            operator=random.choice(tuple(NT)) ), 
-            type = NodeType.NONTERMINAL 
+            self.CreateNodeNT("0", parent=None)
         )
         
         #walk thru each horizontal layer of tree, starting at depth 1 of root
@@ -81,7 +80,7 @@ class Individual():
             #walk thru this layer's nodes
             for i in range(len(layerNodes)):
                 #if layer node is a NT 
-                if layerNodes[i] == NodeType.NONTERMINAL: #hasattr(layerNodes[i], "operator"):
+                if layerNodes[i].type == NodeType.NONTERMINAL: #hasattr(layerNodes[i], "operator"):
                     #for every member of its arity
                     for j in range(layerNodes[i].operator.arity):
                         #roll for the chance to create a NT or T node?
@@ -98,38 +97,26 @@ class Individual():
                         if currDepth == self.initDepth - 1:
                             #create a T child node
                             childrenNodes.append( 
-                                anytree.Node(nodeName, 
-                                operand=random.choice(tuple(self.T)), 
-                                type = NodeType.TERMINAL, 
-                                parent=layerNodes[i]) #specify parent as curr layer node
+                                self.CreateNodeT(nodeName, layerNodes[i]) #specify parent as curr layer node
                             )
                         #if not creating last layer
                         else:
                             if self.initType == InitType.FULL:
                                 #create a NT child node
                                 childrenNodes.append( 
-                                    anytree.Node(nodeName, 
-                                    operator=random.choice(tuple(self.NT)),
-                                    type = NodeType.NONTERMINAL,  
-                                    parent=layerNodes[i]) #specify parent as curr layer node
+                                    self.CreateNodeNT(nodeName, layerNodes[i])
                                 )
                             elif self.initType == InitType.GROWTH:
                                 #roll a 50/50 on whether child is T or NT
                                 if numpy.random.randint(0,2) == 0:
                                     #create a NT child node
                                     childrenNodes.append( 
-                                        anytree.Node(nodeName, 
-                                        operator=random.choice(tuple(self.NT)),
-                                        type = NodeType.NONTERMINAL,  
-                                        parent=layerNodes[i]) #specify parent as curr layer node
+                                        self.CreateNodeNT(nodeName, layerNodes[i])
                                     )
                                 else:
                                     #create a T child node
                                     childrenNodes.append( 
-                                        anytree.Node(nodeName, 
-                                        operand=random.choice(tuple(self.T)), 
-                                        type = NodeType.TERMINAL, 
-                                        parent=layerNodes[i]) #specify parent as curr layer node
+                                        self.CreateNodeT(nodeName, layerNodes[i])
                                     )
             #add layer nodes to overall nodes before overwrite
             nodes = copy.deepcopy(nodes) + copy.deepcopy(layerNodes) #+ copy.deepcopy(childrenNodes)
@@ -148,11 +135,34 @@ class Individual():
         #    if hasattr(node, "operand"):
         #        print("%s%s %s %s" % (pre, node.name, fill, node.operand))
         
-        print(anytree.RenderTree(nodes[0]))
+        #print(anytree.RenderTree(nodes[0], style=anytree.AsciiStyle(), maxlevel=4))
         
-        print(f"Node count: {len(nodes)}")
+        #for node in nodes:
+        #    print(anytree.RenderTree(node))
+        
+        #print(anytree.RenderTree(nodes[0]))
+        
+        #print(f"Node count: {len(nodes)}")
         
         return nodes
+       
+    def CreateNodeNT(self, nodeName, parent) -> anytree.Node:
+        #create a NT child node
+        return anytree.Node(nodeName, 
+            operator=random.choice(tuple(self.NT)),
+            type = NodeType.NONTERMINAL,  
+            rslt = 0,
+            evalutated = False,                                    
+            parent = parent
+        )
+    
+    def CreateNodeT(self, nodeName, parent) -> anytree.Node:
+        #create a T child node
+        return anytree.Node(nodeName, 
+            operand = random.choice(tuple(self.T)), 
+            type = NodeType.TERMINAL, 
+            parent = parent
+        )
        
     #def Mutate(self):
     #    num_of_nodes = len(self.tree)
