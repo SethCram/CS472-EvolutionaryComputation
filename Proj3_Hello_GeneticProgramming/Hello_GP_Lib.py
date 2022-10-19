@@ -18,10 +18,10 @@ def IF(ops):
         return falseRslt
  
 def SUBTRACT(ops):
-    reduce(OPER.sub, ops)
+    return reduce(OPER.sub, ops)
 
 def MULTIPLY(ops):
-    reduce(OPER.mul, ops)
+    return reduce(OPER.mul, ops)
     
 def DIVIDE(ops):
     """Protected divison
@@ -87,8 +87,6 @@ class Individual():
                 child.evaluated == False):
                 #evaluate child
                 self.EvaluateFitnessRecursively(child)
-            
-            assert child.value != None
             
             ops.append(child.value)
         #evaluate parent using children values
