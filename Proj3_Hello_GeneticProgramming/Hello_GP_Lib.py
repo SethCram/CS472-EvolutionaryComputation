@@ -72,11 +72,11 @@ class Individual():
         self.root = self.CreateNodeNT(0, parent=None)
         self.nodeCount = 1
         self.CreateTreeRecursively(self.root)
-        print(anytree.RenderTree(self.root))
+        #print(anytree.RenderTree(self.root))
         
         #fitness eval of tree
         self.EvaluateFitnessRecursively(self.root)
-        self.fitness = self.root.value
+        self.fitness = float( self.root.value )
        
     def EvaluateFitnessRecursively(self, parent: anytree.node):
         ops = []
@@ -258,7 +258,7 @@ class Individual():
     #    num_of_nodes = len(self.tree)
     
     def __str__(self):
-        return f"{self.name}({self.age})"  
+        return f"{anytree.RenderTree(self.root)}, fitness of {self.fitness}"  
 
 def getFitness( individual: Individual ) -> int:
     return individual.fitness
@@ -273,7 +273,7 @@ class GP():
         #self.selectionType
         self.currentGeneration = 0
         
-        self.population = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))] #Population(self.populationSize, self.initDepth, self.NT, self.T)
+        self.population = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))] 
         
         #init fitness lists w/ starting pop's fitness vals
         self.avgFitness = [self.GetAvgFitness()]
@@ -315,10 +315,15 @@ class GP():
         return max( self.population, key=getFitness ).fitness
     
     def GetWorstFitness(self) -> float:
-        return sum(self.population, key=getFitness ) / self.populationSize
+        return min( self.population, key=getFitness ).fitness
     
     def GetAvgFitness(self) -> float:
-        return min( self.population, key=getFitness ).fitness
+        fitnessSum = 0
+        for i in range(0, self.populationSize):
+            #take the fitness sum
+            fitnessSum +=  self.population[i].fitness
+        
+        return fitnessSum / self.populationSize
     
     def Crossover(self, parent1: Individual, parent2: Individual) -> tuple:
         """80% of time NT crossover, 20% of time T crossover. 
@@ -395,8 +400,10 @@ class GP():
             plt.ylabel("likelihood of being chosen")
             plt.xlabel("parent index")
             plt.show()
-    
-        parent1Index, parent2Index = int( numpy.random.choice(xIndexRange, size = 2, p = prob) )
+
+        #get parent indices
+        parentIndices = int( numpy.random.choice(xIndexRange, size = 2, p = prob) )
+        parent1Index, parent2Index = parentIndices[0], parentIndices[1]
         
         #make sure indices within array range
         assert parent1Index < self.populationSize and parent2Index < self.populationSize and type(parent1Index) == int and type(parent2Index) == int
@@ -513,3 +520,5 @@ if __name__ == '__main__':
     for _ in range(GENERATIONS_PER_RUN):
     
         treeGP.RunGen()
+        
+        treeGP.PlotGenerationalFitness()
