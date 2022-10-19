@@ -24,7 +24,19 @@ def MULTIPLY(ops):
     reduce(OPER.mul, ops)
     
 def DIVIDE(ops):
-    return ops[0] / ops[1]
+    """Protected divison
+
+    Args:
+        ops (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
+    if( ops[1] == 0):
+        return 0
+    else:
+        return ops[0] / ops[1]
 
 class InitType(Enum):
     GROWTH = 0
@@ -39,6 +51,12 @@ class Operator():
         self.funct = funct
         self.arity = arity
         
+    def __str__(self) -> str:
+        return f"{self.funct}, arity {self.arity}"
+    
+    def __repr__(self) -> str:
+        return f"{self.funct}, arity {self.arity}"
+    
 class Individual():
     def __init__(self, initDepth: int, initType: InitType, NT: set, T: set) -> None:
         #var init
@@ -47,11 +65,37 @@ class Individual():
         self.T = T
         self.NT = NT
         self.fitness = 0
+        
         #funct init
-        self.tree = self.CreateTree()
-        self.fitness = self.EvaluateFitness()
+        
+        #initialize individual as tree
+        self.root = self.CreateNodeNT(0, parent=None)
+        self.nodeCount = 1
+        self.CreateTreeRecursively(self.root)
+        print(anytree.RenderTree(self.root))
+        
+        #fitness eval of tree
+        self.EvaluateFitnessRecursively(self.root)
+        self.fitness = self.root.value
        
-    def EvaluateFitness(self):
+    def EvaluateFitnessRecursively(self, parent: anytree.node):
+        ops = []
+        #walk thru children
+        for child in parent.children:
+            #if child is NT and not evaluated
+            if (child.type == NodeType.NONTERMINAL and
+                child.evaluated == False):
+                #evaluate child
+                self.EvaluateFitnessRecursively(child)
+            
+            assert child.value != None
+            
+            ops.append(child.value)
+        #evaluate parent using children values
+        parent.value = parent.operator.funct(ops)
+        parent.evaluated = True
+       
+    def EvaluateFitnessIteratively(self):
         """
         Evaluates the individual's tree.
         """
@@ -88,7 +132,30 @@ class Individual():
         
         #return (x**2 + y - 11)**2 + (x + y**2 -7)**2
        
-    def CreateTree(self) -> list:
+    def CreateTreeRecursively(self, parent: anytree.Node) -> None:
+            #every parent is a NT
+            for _ in range(parent.operator.arity):
+                self.nodeCount += 1
+                nodeName = self.nodeCount
+                
+                #if creating laster layer of nodes
+                if parent.depth == self.initDepth - 2: #depth starts at 0
+                        #create T node
+                        self.CreateNodeT(nodeName, parent) 
+                #if not creating last layer
+                else:
+                    if self.initType == InitType.FULL:
+                        #recursively create NT
+                        self.CreateTreeRecursively( self.CreateNodeNT(nodeName, parent) )
+                    elif self.initType == InitType.GROWTH:
+                        #roll a 50/50 on whether child is T or NT
+                        if numpy.random.randint(0,2) == 0:
+                            #recursively create NT
+                            self.CreateTreeRecursively( self.CreateNodeNT(nodeName, parent) )
+                        else:
+                            self.CreateNodeT(nodeName, parent)
+       
+    def CreateTreeIteratively(self) -> list:
         """Adds a root non-terminal by default.
 
         Args:
@@ -120,9 +187,6 @@ class Individual():
                         #nodeName = f"depth: {currDepth+1}, parent: {i}, child: {j}"
                         nodeName = currDepth + i + j
                         nodeName = str(nodeName)
-                        
-                        #specify parent as curr layer node
-                        #parentNode = layerNodes[i]
                         
                         #if layer right before last layer, so creating last layer
                         if currDepth == self.initDepth - 1:
@@ -158,39 +222,36 @@ class Individual():
             childrenNodes = []
         
         #copy over the last layer's nodes too
-        nodes = nodes + copy.deepcopy(layerNodes)
+        #nodes = nodes + copy.deepcopy(layerNodes)
         
         #for pre, fill, node in anytree.RenderTree(nodes[0]):
         #    if hasattr(node, "operator"):
         #        print("%s%s %s %s" % (pre, node.name, fill, node.operator.funct))
         #    if hasattr(node, "operand"):
         #        print("%s%s %s %s" % (pre, node.name, fill, node.operand))
-        
         #print(anytree.RenderTree(nodes[0], style=anytree.AsciiStyle(), maxlevel=4))
-        
         #for node in nodes:
         #    print(anytree.RenderTree(node))
-        
         #print(anytree.RenderTree(nodes[0]))
-        
         #print(f"Node count: {len(nodes)}")
         
-        return nodes
+        #return nodes
+        return nodes[0]
        
     def CreateNodeNT(self, nodeName, parent) -> anytree.Node:
         #create a NT child node
         return anytree.Node(nodeName, 
             operator=random.choice(tuple(self.NT)),
             type = NodeType.NONTERMINAL,  
-            rslt = 0,
-            evalutated = False,                                    
+            value = 0,
+            evaluated = False,                                    
             parent = parent
         )
     
     def CreateNodeT(self, nodeName, parent) -> anytree.Node:
         #create a T child node
         return anytree.Node(nodeName, 
-            operand = random.choice(tuple(self.T)), 
+            value = random.choice(tuple(self.T)), 
             type = NodeType.TERMINAL, 
             parent = parent
         )
@@ -423,6 +484,21 @@ if __name__ == '__main__':
     FITNESS_SHARING_RANGE = 1
     
     INIT_DEPTH = 4
+    
+    
+    for i in range(INIT_DEPTH):
+        if(i == 0):
+            nodes = [anytree.Node(0)]
+        else:
+            nodes.append(anytree.Node(
+                i, parent = nodes[i-1]
+            ))
+    
+    print(anytree.RenderTree(nodes[0]))
+    
+    nodes[3].parent 
+    
+    print(anytree.RenderTree(nodes[0]))
     
     #test individual class
     individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T)
