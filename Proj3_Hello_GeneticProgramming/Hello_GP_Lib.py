@@ -69,13 +69,17 @@ class Individual():
         #funct init
         
         #initialize individual as tree
-        self.root = self.CreateNodeNT(0, parent=None)
-        self.nodeCount = 1
+        self.nodeIndex = 0
+        self.root = self.CreateNodeNT(self.nodeIndex, parent=None)
         self.CreateTreeRecursively(self.root)
         #print(anytree.RenderTree(self.root))
         
+        assert self.nodeIndex == self.GetNodeCount() - 1
+        #print(f"self node count = {self.nodeCount}, get node count = {self.GetNodeCount()}")
+        
         #fitness eval of tree
         self.EvaluateFitnessRecursively(self.root)
+        #this isn't the fitness, needa compare it to funct actual output
         self.fitness = float( self.root.value )
        
     def EvaluateFitnessRecursively(self, parent: anytree.node):
@@ -133,8 +137,8 @@ class Individual():
     def CreateTreeRecursively(self, parent: anytree.Node) -> None:
             #every parent is a NT
             for _ in range(parent.operator.arity):
-                self.nodeCount += 1
-                nodeName = self.nodeCount
+                self.nodeIndex += 1
+                nodeName = self.nodeIndex
                 
                 #if creating laster layer of nodes
                 if parent.depth == self.initDepth - 2: #depth starts at 0
@@ -254,8 +258,25 @@ class Individual():
             parent = parent
         )
        
+    def GetNodeCount(self) -> int:
+        """Calcs node count through counting the root's descendants.
+        Needs to dynamically calculate node count bc during crossover, tree size changes.
+
+        Returns:
+            int: _description_
+        """
+        #return number of descendants and 1 to account for root
+        return len(self.root.descendants) + 1
+       
     #def Mutate(self):
     #    num_of_nodes = len(self.tree)
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Individual):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+        
+        return self.GetNodeCount() == other.GetNodeCount() #should iteratively compare each node
     
     def __str__(self):
         return f"{anytree.RenderTree(self.root)}, fitness of {self.fitness}"  
@@ -273,6 +294,7 @@ class GP():
         #self.selectionType
         self.currentGeneration = 0
         
+        #create pop of 50/50 growth/full individuals
         self.population = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))] 
         
         #init fitness lists w/ starting pop's fitness vals
@@ -337,21 +359,23 @@ class GP():
             tuple: _description_
         """
         
-        #pick crossover points
-        p1_xpoint = numpy.random.randint(1, parent1.shape[0])
-        p2_xpoint = numpy.random.randint(1, parent2.shape[0])
+        #clone children from parents
+        child1 = copy.deepcopy(parent1) 
+        child2 = copy.deepcopy(parent2)
+        
+        #pick crossover subtress
+        parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
         
         #if rand is 80% of time
         if( numpy.random.randint(1,11) <= 8):
             
             #while they're both terminals
             while( 
-                parent1.tree[p1_xpoint].type == NodeType.TERMINAL and 
-                parent2.tree[p2_xpoint].type == NodeType.TERMINAL 
+                parent1subtree.type  == NodeType.TERMINAL and 
+                parent2subtree.type  == NodeType.TERMINAL 
             ):
                 #pick new crossover point for both
-                p1_xpoint = numpy.random.randint(1, parent1.shape[0])
-                p2_xpoint = numpy.random.randint(1, parent2.shape[0])
+                parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
             
             #now atleast one is a NT
         
@@ -359,17 +383,22 @@ class GP():
         else:
             #while they're both NTs
             while( 
-                parent1.tree[p1_xpoint].type == NodeType.NONTERMINAL and 
-                parent2.tree[p2_xpoint].type == NodeType.NONTERMINAL 
+                parent1subtree.type == NodeType.NONTERMINAL and 
+                parent2subtree.type == NodeType.NONTERMINAL 
             ):
                 #pick new crossover point for both
-                p1_xpoint = numpy.random.randint(1, parent1.shape[0])
-                p2_xpoint = numpy.random.randint(1, parent2.shape[0])
+                parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
                 
             #now atleast one is a T
         
-        #if( parent1.tree[p1_xpoint].is_root == True ):
-            
+        #swap subtree parents
+        parent1subtree_parent_ph = copy.deepcopy( parent1subtree.parent )
+        print(anytree.RenderTree(child1.root))
+        parent1subtree.parent = parent2subtree.parent
+        parent2subtree.parent = parent1subtree_parent_ph
+        print(anytree.RenderTree(child1.root))
+        
+        """    
         #copy each child's parent
         child1 = copy.deepcopy(parent1) #.tree[0:p1_xpoint]
         child2 = copy.deepcopy(parent2) #.tree[0:p2_xpoint]
@@ -383,8 +412,30 @@ class GP():
         #crossover at crosover point
         child1.tree = child1.tree[0:p1_xpoint-1] + child2.tree[p2_xpoint:]
         child2.tree = child2.tree[0:p2_xpoint-1] + child1.tree[p1_xpoint:]
+        """
+        
+        #if( parent1.GetNodeCount() )
         
         return child1, child2
+    
+    def GetCrossoverSubtrees(self, parent1, parent2) -> tuple:
+        #use whatever parent has less nodes to choose xpoint
+        if( parent1.GetNodeCount() < parent2.GetNodeCount()):
+            xpointUpperBound = parent1.GetNodeCount()
+        else:
+            xpointUpperBound = parent2.GetNodeCount()
+        
+        #pick crossover points
+        p1_xpoint, p2_xpoint = numpy.random.randint(1, xpointUpperBound, size=2)
+        #p2_xpoint = numpy.random.randint(1, xpointUpperBound)
+        
+        parent1subtree = anytree.find(parent1.root, filter_= lambda node: node.name == p1_xpoint)
+        parent2subtree = anytree.find(parent2.root, filter_= lambda node: node.name == p2_xpoint)
+        
+        assert parent1subtree != None, f"Couldn't find a node with name {p1_xpoint} in tree {anytree.RenderTree(parent1.root)}"
+        assert parent2subtree != None, f"Couldn't find a node with name {p2_xpoint} in tree {anytree.RenderTree(parent2.root)}"
+        
+        return parent1subtree, parent2subtree
     
     def SelectParents(self) -> tuple:
         xIndexRange, prob = self.SetupHalfNormIntDistr(self.populationSize, stdDev=30)
@@ -402,13 +453,13 @@ class GP():
             plt.show()
 
         #get parent indices
-        parentIndices = int( numpy.random.choice(xIndexRange, size = 2, p = prob) )
-        parent1Index, parent2Index = parentIndices[0], parentIndices[1]
+        parent1Index, parent2Index = numpy.random.choice(xIndexRange, size = 2, p = prob)
+        #parent1Index, parent2Index = parentIndices[0], parentIndices[1]
         
         #make sure indices within array range
-        assert parent1Index < self.populationSize and parent2Index < self.populationSize and type(parent1Index) == int and type(parent2Index) == int
+        #assert parent1Index < self.populationSize and parent2Index < self.populationSize and type(parent1Index) == int and type(parent2Index) == int
     
-        return self.population[parent1Index], self.population[parent2Index]
+        return self.population[int(parent1Index)], self.population[int(parent2Index)]
     
     def SetupHalfNormIntDistr(self, pop_size: int, stdDev: int) -> tuple:
         """
@@ -490,7 +541,6 @@ if __name__ == '__main__':
     
     INIT_DEPTH = 4
     
-    
     for i in range(INIT_DEPTH):
         if(i == 0):
             nodes = [anytree.Node(0)]
@@ -498,12 +548,6 @@ if __name__ == '__main__':
             nodes.append(anytree.Node(
                 i, parent = nodes[i-1]
             ))
-    
-    print(anytree.RenderTree(nodes[0]))
-    
-    nodes[3].parent 
-    
-    print(anytree.RenderTree(nodes[0]))
     
     #test individual class
     individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T)
