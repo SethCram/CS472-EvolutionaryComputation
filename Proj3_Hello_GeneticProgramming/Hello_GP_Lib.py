@@ -285,11 +285,12 @@ def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set):
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, xrate: float = 1):
         self.populationSize = populationSize
         self.initDepth = initDepth
         self.NT = NT
         self.T = T
+        self.xrate = xrate
         #self.crossoverType
         #self.selectionType
         self.currentGeneration = 0
@@ -325,7 +326,7 @@ class GP():
             #select parents
             parent1, parent2 = self.SelectParents()
             #do crossover
-            child1, child2 = self.Crossover(parent1, parent2)
+            child1, child2 = self.Crossover(parent1, parent2, self.xrate)
             #add new children to next gen pop
             newPopulation.append(child1)
             newPopulation.append(child2)
@@ -347,8 +348,9 @@ class GP():
         
         return fitnessSum / self.populationSize
     
-    def Crossover(self, parent1: Individual, parent2: Individual) -> tuple:
-        """80% of time NT crossover, 20% of time T crossover. 
+    def Crossover(self, parent1: Individual, parent2: Individual, xrate: float = 1) -> tuple:
+        """Swaps subtree parents at their xpoints. 
+        Xpoints gauss centered around last leaf.
         Never chooses the root node to do crossover with.
 
         Args:
@@ -363,44 +365,48 @@ class GP():
         child1 = copy.deepcopy(parent1) 
         child2 = copy.deepcopy(parent2)
         
-        #pick crossover subtress
-        parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
+        #roll on whether to do crossover
+        randProb = numpy.random.random()
+        if( randProb <= xrate ):
         
-        """
-        #if rand is 80% of time
-        if( numpy.random.randint(1,11) <= 8):
-            
-            #while they're both terminals
-            while( 
-                parent1subtree.type  == NodeType.TERMINAL and 
-                parent2subtree.type  == NodeType.TERMINAL 
-            ):
-                #pick new crossover point for both
-                parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
-            
-            #now atleast one is a NT
+            #pick crossover subtress
+            parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
         
-        #if rand is 20% of time
-        else:
-            #while they're both NTs
-            while( 
-                parent1subtree.type == NodeType.NONTERMINAL and 
-                parent2subtree.type == NodeType.NONTERMINAL 
-            ):
-                #pick new crossover point for both
-                parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
+            """
+            #if rand is 80% of time
+            if( numpy.random.randint(1,11) <= 8):
                 
-            #now atleast one is a T
-        """
-        
-        #swap subtree parents
-        parent1subtree_parent_ph = parent1subtree.parent # copy.deepcopy( parent1subtree.parent )
-        #print(anytree.RenderTree(child1.root))
-        #print(anytree.RenderTree(child2.root))
-        parent1subtree.parent = parent2subtree.parent
-        parent2subtree.parent = parent1subtree_parent_ph
-        #print(anytree.RenderTree(child1.root))
-        #print(anytree.RenderTree(child2.root))
+                #while they're both terminals
+                while( 
+                    parent1subtree.type  == NodeType.TERMINAL and 
+                    parent2subtree.type  == NodeType.TERMINAL 
+                ):
+                    #pick new crossover point for both
+                    parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
+                
+                #now atleast one is a NT
+            
+            #if rand is 20% of time
+            else:
+                #while they're both NTs
+                while( 
+                    parent1subtree.type == NodeType.NONTERMINAL and 
+                    parent2subtree.type == NodeType.NONTERMINAL 
+                ):
+                    #pick new crossover point for both
+                    parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
+                    
+                #now atleast one is a T
+            """
+            
+            #swap subtree parents (don't copy)
+            parent1subtree_parent_ph = parent1subtree.parent 
+            #print(anytree.RenderTree(child1.root))
+            #print(anytree.RenderTree(child2.root))
+            parent1subtree.parent = parent2subtree.parent
+            parent2subtree.parent = parent1subtree_parent_ph
+            #print(anytree.RenderTree(child1.root))
+            #print(anytree.RenderTree(child2.root))
         
         return child1, child2
     
@@ -559,7 +565,7 @@ if __name__ == '__main__':
     CROWDING_DIST_THRESH = 1
     CROWDING_NICHES = 30
     FITNESS_SHARING_RANGE = 1
-    
+    XRATE = 0.8
     INIT_DEPTH = 4
     """
     for i in range(INIT_DEPTH):
@@ -600,7 +606,8 @@ if __name__ == '__main__':
         populationSize=POPULATION_SIZE,
         initDepth=INIT_DEPTH,
         NT=NT,
-        T=T
+        T=T,
+        xrate=XRATE
     )
     
     for _ in range(GENERATIONS_PER_RUN):
