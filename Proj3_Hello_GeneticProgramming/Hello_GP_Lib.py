@@ -64,7 +64,6 @@ class Individual():
         self.initDepth = initDepth
         self.T = T
         self.NT = NT
-        self.fitness = 0
         
         #funct init
         
@@ -78,24 +77,32 @@ class Individual():
         #print(f"self node count = {self.nodeCount}, get node count = {self.GetNodeCount()}")
         
         #fitness eval of tree
+        self.EvaluateFitness()
+       
+    def EvaluateFitness(self):
+        #NT's assigned values
         self.EvaluateFitnessRecursively(self.root)
-        #this isn't the fitness, needa compare it to funct actual output
+        
         self.fitness = float( self.root.value )
        
     def EvaluateFitnessRecursively(self, parent: anytree.node):
+        """NT nodes assigned values.
+
+        Args:
+            parent (anytree.node): _description_
+        """
         ops = []
         #walk thru children
         for child in parent.children:
             #if child is NT and not evaluated
-            if (child.type == NodeType.NONTERMINAL and
-                child.evaluated == False):
+            if (child.type == NodeType.NONTERMINAL):
                 #evaluate child
                 self.EvaluateFitnessRecursively(child)
             
             ops.append(child.value)
+        
         #evaluate parent using children values
         parent.value = parent.operator.funct(ops)
-        parent.evaluated = True
        
     def EvaluateFitnessIteratively(self):
         """
@@ -245,8 +252,7 @@ class Individual():
         return anytree.Node(nodeName, 
             operator=random.choice(tuple(self.NT)),
             type = NodeType.NONTERMINAL,  
-            value = 0,
-            evaluated = False,                                    
+            value = 0,                                   
             parent = parent
         )
     
@@ -326,7 +332,12 @@ class GP():
             #select parents
             parent1, parent2 = self.SelectParents()
             #do crossover
-            child1, child2 = self.Crossover(parent1, parent2, self.xrate)
+            child1, child2, xover = self.Crossover(parent1, parent2, self.xrate)
+            #if crossover happened
+            if(xover):
+                #re'eval children fitness
+                child1.EvaluateFitness()
+                child2.EvaluateFitness()
             #add new children to next gen pop
             newPopulation.append(child1)
             newPopulation.append(child2)
@@ -358,7 +369,7 @@ class GP():
             parent2 (Individual): _description_
 
         Returns:
-            tuple: _description_
+            tuple: child1, child2, whether xover happened
         """
         
         #clone children from parents
@@ -367,7 +378,8 @@ class GP():
         
         #roll on whether to do crossover
         randProb = numpy.random.random()
-        if( randProb <= xrate ):
+        xover = randProb <= xrate
+        if( xover ):
         
             #pick crossover subtress
             parent1subtree, parent2subtree = self.GetCrossoverSubtrees(child1, child2)
@@ -407,8 +419,8 @@ class GP():
             parent2subtree.parent = parent1subtree_parent_ph
             #print(anytree.RenderTree(child1.root))
             #print(anytree.RenderTree(child2.root))
-        
-        return child1, child2
+
+        return child1, child2, xover
     
     def GetCrossoverSubtrees(self, parent1, parent2) -> tuple:
         """Swaps subtrees at last leaf gauss random indices.
@@ -457,7 +469,7 @@ class GP():
         parent1subtree = parent1.root.descendants[-p1_xpoint]
         parent2subtree = parent2.root.descendants[-p2_xpoint]
         
-        print(f"Crossover at {parent1subtree.name} and {parent2subtree.name}")
+        #debug: print(f"Crossover at {parent1subtree.name} and {parent2subtree.name}")
         
         assert parent1subtree != None, f"Couldn't find a node with xpoint {-p1_xpoint-1} in tree {anytree.RenderTree(parent1.root)}"
         assert parent2subtree != None, f"Couldn't find a node with xpoint {-p2_xpoint-1} in tree {anytree.RenderTree(parent2.root)}"
