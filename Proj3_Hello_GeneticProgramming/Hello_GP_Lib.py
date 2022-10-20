@@ -316,7 +316,7 @@ def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x, y, xrate: float = 1):
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x, y, pairs_of_parents_elitism_saves, xrate: float = 1):
         self.populationSize = populationSize
         self.initDepth = initDepth
         self.NT = NT
@@ -325,6 +325,7 @@ class GP():
         #self.crossoverType
         #self.selectionType
         self.currentGeneration = 0
+        self.pairs_of_parents_elitism_saves = pairs_of_parents_elitism_saves
         
         #create pop of 50/50 growth/full individuals
         self.population = [Individual(initDepth, InitType.FULL, NT, T, x, y) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x, y) for _ in range(int(self.populationSize/2))] 
@@ -349,11 +350,18 @@ class GP():
     def CreateNextGeneration(self) ->None:
         #ensure individuals sorted in ascending order
         self.OrderPopulationByFitness()
-        #make sure new pop empty
+        #new pop
         newPopulation = []
         
+        #Save parents for elitism 
+        for k in range(0, self.pairs_of_parents_elitism_saves):
+            newPopulation.append(self.population[k])
+            newPopulation.append(self.population[k+1])
+        
+        pairs_of_children = int(self.populationSize/2)
+        
         #walk thru half pop
-        for _ in range(int(self.populationSize/2)):
+        for _ in range(self.pairs_of_parents_elitism_saves, pairs_of_children):
             #select parents
             parent1, parent2 = self.SelectParents()
             #do crossover
@@ -665,7 +673,8 @@ if __name__ == '__main__':
         T=T,
         xrate=XRATE,
         x=inputs,
-        y=results
+        y=results,
+        pairs_of_parents_elitism_saves=PAIRS_OF_PARENTS_SAVED_FOR_ELITISM
     )
     
     
