@@ -68,10 +68,8 @@ class Individual():
         self.initDepth = initDepth
         self.T = T
         self.NT = NT
-        self.x = x
-        self.y = y
         
-        assert len(self.x) == len(self.y)
+        assert len(x) == len(y)
         
         #funct init
         
@@ -85,9 +83,9 @@ class Individual():
         #print(f"self node count = {self.nodeCount}, get node count = {self.GetNodeCount()}")
         
         #fitness eval of tree
-        self.EvaluateFitness()
+        self.EvaluateFitness(x, y)
        
-    def EvaluateFitness(self):
+    def EvaluateFitness(self, x, y):
         """
         Fitness evaluated through using RMSE (Root Mean Sqrd Error).
         Lower fitness is better.
@@ -95,13 +93,15 @@ class Individual():
         
         sqrdSum = 0
         
-        inputCount = len(self.x)
+        inputCount = len(x)
+        
+        assert inputCount == len(y)
         
         for i in range(inputCount):
             #NT's assigned values
-            self.EvaluateFitnessRecursively(self.root, self.x[i])
+            self.EvaluateFitnessRecursively(self.root, x[i])
             #accrue sqrd error
-            sqrdSum += ( self.y[i] - float( self.root.value ) )**2
+            sqrdSum += ( y[i] - float( self.root.value ) )**2
             
         self.fitness = np.sqrt(sqrdSum/inputCount)
        
@@ -316,19 +316,20 @@ def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x, y, pairs_of_parents_elitism_saves, xrate: float = 1):
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x_train, y_train, pairs_of_parents_elitism_saves, xrate: float = 1):
         self.populationSize = populationSize
         self.initDepth = initDepth
         self.NT = NT
         self.T = T
         self.xrate = xrate
-        #self.crossoverType
+        self.x_train = x_train
+        self.y_train = y_train
         #self.selectionType
         self.currentGeneration = 0
         self.pairs_of_parents_elitism_saves = pairs_of_parents_elitism_saves
         
         #create pop of 50/50 growth/full individuals
-        self.population = [Individual(initDepth, InitType.FULL, NT, T, x, y) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x, y) for _ in range(int(self.populationSize/2))] 
+        self.population = [Individual(initDepth, InitType.FULL, NT, T, x_train, y_train) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x_train, y_train) for _ in range(int(self.populationSize/2))] 
         
         #init fitness lists w/ starting pop's fitness vals
         self.avgFitness = [self.GetAvgFitness()]
@@ -369,8 +370,8 @@ class GP():
             #if crossover happened
             if(xover):
                 #re'eval children fitness
-                child1.EvaluateFitness()
-                child2.EvaluateFitness()
+                child1.EvaluateFitness(self.x_train, self.y_train)
+                child2.EvaluateFitness(self.x_train, self.y_train)
             #add new children to next gen pop
             newPopulation.append(child1)
             newPopulation.append(child2)
@@ -583,6 +584,64 @@ class GP():
         plt.xlabel('Generation')
         plt.show()
     
+    def Predict(self, x) -> list:
+        """
+        Predict using the best fit individual.
+        """
+        inputCount = len(x)
+        
+        y_pred = np.empty(inputCount)
+        
+        """
+        y_pred = np.empty((self.populationSize, inputCount))
+        
+        for j in range(self.populationSize):
+            for i in range(inputCount):
+                self.population[j].EvaluateFitnessRecursively(self.root, x[i])
+                
+                y_pred[j][i] = self.population[j].root.value
+        """
+        #order pop by fitness 
+        self.OrderPopulationByFitness()
+        
+        #sel best individual
+        bestIndividual = self.population[0]
+        
+        for i in range(inputCount):
+            bestIndividual.EvaluateFitnessRecursively(self.root, x[i])
+            
+            y_pred[i] = bestIndividual.root.value
+            
+        return y_pred
+        
+    def Test(self, x, y):
+        
+        inputCount = len(x)
+        
+        assert inputCount == len(y)
+        
+        for i in range(self.populationSize):
+            self.population[i].EvaluateFitness(x, y)
+            
+        bestFitness = self.GetBestFitness()
+        
+        print(f"Best fit individual = {bestFitness}")
+        
+        y_pred = self.Predict(x)
+        
+        assert len(y_pred) == len(y)
+        
+        #t = np.arange(0, inputCount)
+            
+        plt.rcParams.update({'font.size': 22})
+        plt.plot(x, y_pred, labels='Predictions') 
+        plt.plot(x, y, labels='Targets') 
+        plt.grid() 
+        plt.title('Predictions vs Targets')
+        plt.ylabel('y')
+        plt.xlabel('x')
+        plt.show()
+    
     def __str__(self):
         return f"{self.population}, best fitness {self.bestFitness[-1]}"
 
@@ -666,21 +725,23 @@ if __name__ == '__main__':
     individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T, inputs, results)
     
     #test GP
-    treeGP = GP(
+    gp = GP(
         populationSize=POPULATION_SIZE,
         initDepth=INIT_DEPTH,
         NT=NT,
         T=T,
         xrate=XRATE,
-        x=inputs,
-        y=results,
+        x_train=inputs,
+        y_train=results,
         pairs_of_parents_elitism_saves=PAIRS_OF_PARENTS_SAVED_FOR_ELITISM
     )
     
-    
-    
     for _ in range(GENERATIONS_PER_RUN):
     
-        treeGP.RunGen()
+        gp.RunGen()
         
-        treeGP.PlotGenerationalFitness()
+        #gp.Test()
+        
+        #gp.PlotGenerationalFitness()
+        
+    gp.PlotGenerationalFitness()
