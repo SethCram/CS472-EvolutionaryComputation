@@ -9,6 +9,7 @@ import scipy.stats as ss
 import anytree
 from functools import reduce
 import operator as OPER
+import sklearn.model_selection as sms
 
 def IF(ops):
     conditional, trueRslt, falseRslt = ops[0], ops[1], ops[2]
@@ -608,7 +609,7 @@ class GP():
         bestIndividual = self.population[0]
         
         for i in range(inputCount):
-            bestIndividual.EvaluateFitnessRecursively(self.root, x[i])
+            bestIndividual.EvaluateFitnessRecursively(bestIndividual.root, x[i])
             
             y_pred[i] = bestIndividual.root.value
             
@@ -634,8 +635,9 @@ class GP():
         #t = np.arange(0, inputCount)
             
         plt.rcParams.update({'font.size': 22})
-        plt.plot(x, y_pred, labels='Predictions') 
-        plt.plot(x, y, labels='Targets') 
+        plt.plot(x, y_pred, label='Predictions') 
+        plt.plot(x, y, label='Targets') 
+        plt.legend()
         plt.grid() 
         plt.title('Predictions vs Targets')
         plt.ylabel('y')
@@ -713,16 +715,15 @@ if __name__ == '__main__':
     inputs = np.arange(r_min, r_max, 0.01)
     # compute targets
     results = objective(inputs)
-    # create a line plot of input vs result
-    plt.plot(inputs, results)
-    # draw a vertical line at the optimal input
-    plt.axvline(x=x_optima, ls='--', color='red')
-    # show the plot
-    plt.show()
     
     #test individual class
-    individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T, inputs, results)
-    individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T, inputs, results)
+    #individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T, inputs, results)
+    #individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T, inputs, results)
+    
+    #X_train, X_test, y_train, y_test = sms.train_test_split(inputs, results, test_size=0.33)
+    #X_train, X_test, y_train, y_test = inputs, inputs, results, results
+    
+    X_train, y_train = inputs, results
     
     #test GP
     gp = GP(
@@ -731,17 +732,49 @@ if __name__ == '__main__':
         NT=NT,
         T=T,
         xrate=XRATE,
-        x_train=inputs,
-        y_train=results,
+        x_train=X_train,
+        y_train=y_train,
         pairs_of_parents_elitism_saves=PAIRS_OF_PARENTS_SAVED_FOR_ELITISM
     )
+    
+    #validation data # sample input range uniformly at 0.01 increments
+    x_validation = np.arange(0.9, r_max, 0.001)
+    y_validation = objective(x_validation)
     
     for _ in range(GENERATIONS_PER_RUN):
     
         gp.RunGen()
         
-        #gp.Test()
-        
         #gp.PlotGenerationalFitness()
+    
+    #compare to validation set within bounds    
+    gp.Test(x_validation, y_validation)
         
     gp.PlotGenerationalFitness()
+    
+    #test using data outside of input range
+    # define range for input
+    r_min, r_max = 1.3, 5
+    # sample input range uniformly at 0.01 increments
+    x_test_outside = np.arange(r_min, r_max, 0.01)
+    # compute targets
+    y_test_outside = objective(x_test_outside)
+    #compare to test set outside of bounds
+    gp.Test(x_test_outside, y_test_outside)
+    
+    
+    # define range for input
+    r_min, r_max = 0.0, 1.2
+    # define optimal input value
+    x_optima = 0.96609
+    # sample input range uniformly at 0.01 increments
+    inputs = np.arange(r_min, r_max, 0.01)
+    # compute targets
+    results = objective(inputs)
+    # create a line plot of input vs result
+    plt.plot(inputs, results)
+    # draw a vertical line at the optimal input
+    plt.axvline(x=x_optima, ls='--', color='red')
+    
+    # show the plot
+    plt.show()
