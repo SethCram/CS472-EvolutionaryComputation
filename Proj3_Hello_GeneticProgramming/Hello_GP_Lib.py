@@ -3,7 +3,6 @@ from enum import Enum
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-import multiprocessing
 import time
 import scipy.stats as ss
 import anytree
@@ -63,12 +62,13 @@ def objective(x):
 	return -(1.4 - 3.0 * x) * np.sin(18.0 * x)
     
 class Individual():
-    def __init__(self, initDepth: int, initType: InitType, NT: set, T: set, x, y) -> None:
+    def __init__(self, initDepth: int, initType: InitType, NT: set, T: set, x, y, softCapNodeMax) -> None:
         #var init
         self.initType = initType
         self.initDepth = initDepth
         self.T = T
         self.NT = NT
+        self.softCapNodeMax = softCapNodeMax
         
         assert len(x) == len(y)
         
@@ -86,9 +86,10 @@ class Individual():
         #fitness eval of tree
         self.EvaluateFitness(x, y)
        
-    def EvaluateFitness(self, x, y):
+    def EvaluateFitness(self, x, y, applyParsimonyPressure = True):
         """
         Fitness evaluated through using RMSE (Root Mean Sqrd Error).
+        Applies parsimony pressure by default.
         Lower fitness is better.
         """
         
@@ -103,8 +104,17 @@ class Individual():
             self.EvaluateFitnessRecursively(self.root, x[i])
             #accrue sqrd error
             sqrdSum += ( y[i] - float( self.root.value ) )**2
+        
+        fitness = np.sqrt(sqrdSum/inputCount)
             
-        self.fitness = np.sqrt(sqrdSum/inputCount)
+        nodeCount = self.GetNodeCount()
+            
+        #if applying pressure and enough nodes to apply fitness mod
+        if applyParsimonyPressure and nodeCount > self.softCapNodeMax:
+            #incr fitness by every additional node over the max
+            fitness = fitness + fitness * (nodeCount - self.softCapNodeMax)
+            
+        self.fitness = fitness
        
     def EvaluateFitnessRecursively(self, parent: anytree.node, x: float):
         """NT nodes assigned values.
@@ -317,7 +327,10 @@ def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x_train, y_train, pairs_of_parents_elitism_saves, xrate: float = 1):
+    """
+    Genetic Program with individuals as trees.
+    """
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x_train, y_train, pairs_of_parents_elitism_saves, softCapNodeMax: int = 10, xrate: float = 1):
         self.populationSize = populationSize
         self.initDepth = initDepth
         self.NT = NT
@@ -330,12 +343,14 @@ class GP():
         self.pairs_of_parents_elitism_saves = pairs_of_parents_elitism_saves
         
         #create pop of 50/50 growth/full individuals
-        self.population = [Individual(initDepth, InitType.FULL, NT, T, x_train, y_train) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x_train, y_train) for _ in range(int(self.populationSize/2))] 
+        self.population = [Individual(initDepth, InitType.FULL, NT, T, x_train, y_train, softCapNodeMax) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x_train, y_train, softCapNodeMax) for _ in range(int(self.populationSize/2))] 
         
         #init fitness lists w/ starting pop's fitness vals
         self.avgFitness = [self.GetAvgFitness()]
         self.bestFitness = [self.GetBestFitness()]
         self.worstFitness = [self.GetWorstFitness()] 
+        self.bestFitnessNodeCount = [self.GetBestFitnessNodeCount()]
+        self.worstFitnessNodeCount = [self.GetWorstFitnessNodeCount()]
            
     def RunGen(self) -> None:
         #create new pop
@@ -345,6 +360,8 @@ class GP():
         self.avgFitness.append( self.GetAvgFitness() ) 
         self.worstFitness.append( self.GetWorstFitness() ) 
         self.bestFitness.append( self.GetBestFitness() )
+        self.bestFitnessNodeCount.append(self.GetBestFitnessNodeCount())
+        self.worstFitnessNodeCount.append(self.GetWorstFitnessNodeCount())
         
         #advance gen count
         self.currentGeneration += 1
@@ -380,11 +397,23 @@ class GP():
         #don't needa deep copy bc newPopulation wiped out w/ leave funct
         self.population = newPopulation
    
+    def GetBestFitIndividual(self) -> Individual:
+        return min( self.population, key=getFitness )
+    
+    def GetWorstFitIndividual(self) -> Individual:
+        return max( self.population, key=getFitness )
+   
+    def GetBestFitnessNodeCount(self) -> int:
+        return self.GetBestFitIndividual().GetNodeCount()
+    
+    def GetWorstFitnessNodeCount(self) -> int:
+        return self.GetWorstFitIndividual().GetNodeCount()
+   
     def GetBestFitness(self) -> float:
-        return min( self.population, key=getFitness ).fitness
+        return self.GetBestFitIndividual().fitness
     
     def GetWorstFitness(self) -> float:
-        return max( self.population, key=getFitness ).fitness
+        return self.GetWorstFitIndividual().fitness
     
     def GetAvgFitness(self) -> float:
         fitnessSum = 0
@@ -560,28 +589,43 @@ class GP():
     
     def PlotGenerationalFitness(self):
         t = np.arange(0, self.currentGeneration+1)
+        
+        plt.rcParams.update({'font.size': 22})
+        plt.title('Generational Fitness Data')
+        plt.plot(t, self.worstFitness, label='Worst Fitness') 
+        plt.plot(t, self.avgFitness, label='Average Fitness') 
+        plt.plot(t, self.bestFitness, label='Best Fitness') 
+        plt.grid() 
+        plt.legend()
+        plt.ylabel('Fitness')
+        plt.xlabel('Generation')
+        
+        #init worst worst fit
+        worstWorstFitness = max(self.worstFitness)
+        
+        fitnessIndex = 0
+        
+        for fitnessData in (self.bestFitness, self.avgFitness, self.worstFitness):
+            yAnnotatePosition = worstWorstFitness - worstWorstFitness * fitnessIndex / 12
+            
+            fitnessIndex += 1
+            
+            plt.annotate('%0.7f' % min(fitnessData), xy=(1, yAnnotatePosition), xytext=(8, 0), 
+                        xycoords=('axes fraction', 'data'), textcoords='offset points')
+        
+        plt.show()
+    
+    
+    def PlotGenerationalNodeCount(self):
+        t = np.arange(0, self.currentGeneration+1)
             
         plt.rcParams.update({'font.size': 22})
-        plt.plot(t, self.bestFitness) 
+        plt.plot(t, self.bestFitnessNodeCount, label='Best Fitness') 
+        plt.plot(t, self.worstFitnessNodeCount, label='Worst Fitness')
         plt.grid() 
-        plt.title('Best Fitness per Generation')
-        plt.ylabel('Best Fitness')
-        plt.xlabel('Generation')
-        plt.show()
-
-        #plt.subplot(3, 1, 2)
-        plt.plot(t, self.avgFitness) 
-        plt.grid() 
-        plt.title('Average Fitness per Generation')
-        plt.ylabel('Average Fitness')
-        plt.xlabel('Generation')
-        plt.show()
-
-        #plt.subplot(3, 1, 3)
-        plt.plot(t, self.worstFitness) 
-        plt.grid() 
-        plt.title('Worst Fitness per Generation')
-        plt.ylabel('Worst Fitness')
+        plt.legend()
+        plt.title('Node Count per Generation')
+        plt.ylabel('Node Count')
         plt.xlabel('Generation')
         plt.show()
     
@@ -741,16 +785,19 @@ if __name__ == '__main__':
     x_validation = np.arange(0.9, r_max, 0.001)
     y_validation = objective(x_validation)
     
+    start_time = time.time()
+    
     for _ in range(GENERATIONS_PER_RUN):
     
         gp.RunGen()
+      
+    print(f"Runtime took {time.time() - start_time} seconds.")
         
-        #gp.PlotGenerationalFitness()
+    gp.PlotGenerationalFitness()
+    gp.PlotGenerationalNodeCount()
     
     #compare to validation set within bounds    
     gp.Test(x_validation, y_validation)
-        
-    gp.PlotGenerationalFitness()
     
     #test using data outside of input range
     # define range for input
