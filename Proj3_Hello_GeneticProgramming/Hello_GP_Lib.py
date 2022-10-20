@@ -2,7 +2,7 @@ import copy
 from enum import Enum
 import random
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 import multiprocessing
 import time
 import scipy.stats as ss
@@ -57,13 +57,21 @@ class Operator():
     def __repr__(self) -> str:
         return f"{self.funct}, arity {self.arity}"
     
+# objective function
+def objective(x):
+	return -(1.4 - 3.0 * x) * np.sin(18.0 * x)
+    
 class Individual():
-    def __init__(self, initDepth: int, initType: InitType, NT: set, T: set) -> None:
+    def __init__(self, initDepth: int, initType: InitType, NT: set, T: set, x, y) -> None:
         #var init
         self.initType = initType
         self.initDepth = initDepth
         self.T = T
         self.NT = NT
+        self.x = x
+        self.y = y
+        
+        assert len(self.x) == len(self.y)
         
         #funct init
         
@@ -80,12 +88,24 @@ class Individual():
         self.EvaluateFitness()
        
     def EvaluateFitness(self):
-        #NT's assigned values
-        self.EvaluateFitnessRecursively(self.root)
+        """
+        Fitness evaluated through using RMSE (Root Mean Sqrd Error).
+        Lower fitness is better.
+        """
         
-        self.fitness = float( self.root.value )
+        sqrdSum = 0
+        
+        inputCount = len(self.x)
+        
+        for i in range(inputCount):
+            #NT's assigned values
+            self.EvaluateFitnessRecursively(self.root, self.x[i])
+            #accrue sqrd error
+            sqrdSum += ( self.y[i] - float( self.root.value ) )**2
+            
+        self.fitness = np.sqrt(sqrdSum/inputCount)
        
-    def EvaluateFitnessRecursively(self, parent: anytree.node):
+    def EvaluateFitnessRecursively(self, parent: anytree.node, x: float):
         """NT nodes assigned values.
 
         Args:
@@ -96,10 +116,15 @@ class Individual():
         for child in parent.children:
             #if child is NT and not evaluated
             if (child.type == NodeType.NONTERMINAL):
-                #evaluate child
-                self.EvaluateFitnessRecursively(child)
-            
-            ops.append(child.value)
+                #evaluate child (don't change input val)
+                self.EvaluateFitnessRecursively(child, x)
+            #if child val is a variable 
+            if( child.value == 'x'):
+                #substitute passed in var
+                ops.append(x)
+            #regular child 
+            else:
+                ops.append(child.value)
         
         #evaluate parent using children values
         parent.value = parent.operator.funct(ops)
@@ -158,7 +183,7 @@ class Individual():
                         self.CreateTreeRecursively( self.CreateNodeNT(nodeName, parent) )
                     elif self.initType == InitType.GROWTH:
                         #roll a 50/50 on whether child is T or NT
-                        if numpy.random.randint(0,2) == 0:
+                        if np.random.randint(0,2) == 0:
                             #recursively create NT
                             self.CreateTreeRecursively( self.CreateNodeNT(nodeName, parent) )
                         else:
@@ -212,7 +237,7 @@ class Individual():
                                 )
                             elif self.initType == InitType.GROWTH:
                                 #roll a 50/50 on whether child is T or NT
-                                if numpy.random.randint(0,2) == 0:
+                                if np.random.randint(0,2) == 0:
                                     #create a NT child node
                                     childrenNodes.append( 
                                         self.CreateNodeNT(nodeName, layerNodes[i])
@@ -291,7 +316,7 @@ def getFitness( individual: Individual ) -> int:
     return individual.fitness
 
 class GP():
-    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, xrate: float = 1):
+    def __init__(self, populationSize: int, initDepth: int, NT: set, T: set, x, y, xrate: float = 1):
         self.populationSize = populationSize
         self.initDepth = initDepth
         self.NT = NT
@@ -302,7 +327,7 @@ class GP():
         self.currentGeneration = 0
         
         #create pop of 50/50 growth/full individuals
-        self.population = [Individual(initDepth, InitType.FULL, NT, T) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T) for _ in range(int(self.populationSize/2))] 
+        self.population = [Individual(initDepth, InitType.FULL, NT, T, x, y) for _ in range(int(self.populationSize/2))] + [Individual(initDepth, InitType.GROWTH, NT, T, x, y) for _ in range(int(self.populationSize/2))] 
         
         #init fitness lists w/ starting pop's fitness vals
         self.avgFitness = [self.GetAvgFitness()]
@@ -346,10 +371,10 @@ class GP():
         self.population = newPopulation
    
     def GetBestFitness(self) -> float:
-        return max( self.population, key=getFitness ).fitness
+        return min( self.population, key=getFitness ).fitness
     
     def GetWorstFitness(self) -> float:
-        return min( self.population, key=getFitness ).fitness
+        return max( self.population, key=getFitness ).fitness
     
     def GetAvgFitness(self) -> float:
         fitnessSum = 0
@@ -377,7 +402,7 @@ class GP():
         child2 = copy.deepcopy(parent2)
         
         #roll on whether to do crossover
-        randProb = numpy.random.random()
+        randProb = np.random.random()
         xover = randProb <= xrate
         if( xover ):
         
@@ -386,7 +411,7 @@ class GP():
         
             """
             #if rand is 80% of time
-            if( numpy.random.randint(1,11) <= 8):
+            if( np.random.randint(1,11) <= 8):
                 
                 #while they're both terminals
                 while( 
@@ -439,7 +464,7 @@ class GP():
         #else:
         #    xpointUpperBound = parent2.GetNodeCount()
         #pick crossover points
-        #p1_xpoint, p2_xpoint = numpy.random.randint(1, xpointUpperBound, size=2)
+        #p1_xpoint, p2_xpoint = np.random.randint(1, xpointUpperBound, size=2)
         #parent1subtree = anytree.find(parent1.root, filter_= lambda node: node.name == p1_xpoint) #could also index root descendants instead
         #parent2subtree = anytree.find(parent2.root, filter_= lambda node: node.name == p2_xpoint)
         
@@ -455,14 +480,14 @@ class GP():
         p1xIndexRange, p1prob = self.SetupHalfNormIntDistr(p1descendantNodes, stdDev=p1descendantNodes/4)
         p2xIndexRange, p2prob = self.SetupHalfNormIntDistr(p2descendantNodes, stdDev=p2descendantNodes/4)
         
-        #p1_xpoint = int( numpy.random.randint(0, p1Nodes-1, size=1) )
-        #p2_xpoint = int ( numpy.random.randint(0, p2Nodes-1, size=1) )
+        #p1_xpoint = int( np.random.randint(0, p1Nodes-1, size=1) )
+        #p2_xpoint = int ( np.random.randint(0, p2Nodes-1, size=1) )
         #parent1subtree = parent1.root.descendants[p1_xpoint]
         #parent2subtree = parent2.root.descendants[p2_xpoint]
         
         #sel parent xpoints from 1 to descendant nodes count
-        p1_xpoint = int( numpy.random.choice(p1xIndexRange+1, size = 1, p = p1prob) )
-        p2_xpoint = int( numpy.random.choice(p2xIndexRange+1, size = 1, p = p2prob) )
+        p1_xpoint = int( np.random.choice(p1xIndexRange+1, size = 1, p = p1prob) )
+        p2_xpoint = int( np.random.choice(p2xIndexRange+1, size = 1, p = p2prob) )
         
         #apply xpoint, starting from the end
         # so norm distr centered around end of list (more terminals, smaller NTs)
@@ -482,7 +507,7 @@ class GP():
         #if overloaded to display distr graph
         if(False):
             #take randos using the calc'd prob and index range
-            nums = numpy.random.choice(xIndexRange, size = 1000000, p = prob)
+            nums = np.random.choice(xIndexRange, size = 1000000, p = prob)
             #display distr histogram
             plt.rcParams.update({'font.size': 22})
             plt.hist(nums, bins = pop_size)
@@ -492,7 +517,7 @@ class GP():
             plt.show()
 
         #get parent indices
-        parent1Index, parent2Index = numpy.random.choice(xIndexRange, size = 2, p = prob)
+        parent1Index, parent2Index = np.random.choice(xIndexRange, size = 2, p = prob)
         #parent1Index, parent2Index = parentIndices[0], parentIndices[1]
         
         #make sure indices within array range
@@ -508,7 +533,7 @@ class GP():
             tuple: index range and probability funct
         """
         #take interval 1-100
-        x = numpy.arange(1, pop_size+1) #bc upper bound is exclusive
+        x = np.arange(1, pop_size+1) #bc upper bound is exclusive
         #store every number's +/-0.5
         xU, xL = x + 0.5, x - 0.5 
         #determine probability
@@ -524,7 +549,7 @@ class GP():
         self.population.sort(key=getFitness)
     
     def PlotGenerationalFitness(self):
-        t = numpy.arange(0, self.currentGeneration+1)
+        t = np.arange(0, self.currentGeneration+1)
             
         plt.rcParams.update({'font.size': 22})
         plt.plot(t, self.bestFitness) 
@@ -551,18 +576,23 @@ class GP():
         plt.show()
     
     def __str__(self):
-        return f"{self.benchmark_funct} with pop size ({self.popSize})"
+        return f"{self.population}, best fitness {self.bestFitness[-1]}"
 
 NT = {
         Operator(funct=sum, arity=2), 
         Operator(funct=SUBTRACT, arity=2), 
         Operator(funct=MULTIPLY, arity=2), 
         Operator(funct=DIVIDE, arity=2), #division by zero always yields zero in integer arithmetic.
-        Operator(funct=numpy.abs, arity=1),
+        Operator(funct=np.abs, arity=1),
         Operator(funct=IF, arity=3),
+        Operator(funct=np.sin, arity=1),
+        Operator(funct=np.cos, arity=1),
     }
-    
-T = {1,2,3}
+
+# define optimal input value
+#x_optima = 0.96609
+#construct terminal set
+T = {1.4, 3, 18, 'x'}
 
 if __name__ == '__main__': 
     POPULATION_SIZE = 100
@@ -579,6 +609,7 @@ if __name__ == '__main__':
     FITNESS_SHARING_RANGE = 1
     XRATE = 0.8
     INIT_DEPTH = 4
+    
     """
     for i in range(INIT_DEPTH):
         if(i == 0):
@@ -607,11 +638,24 @@ if __name__ == '__main__':
     print(anytree.RenderTree(nodes2[0]))
     """
     
+    # define range for input
+    r_min, r_max = 0.0, 1.2
+    # define optimal input value
+    x_optima = 0.96609
+    # sample input range uniformly at 0.01 increments
+    inputs = np.arange(r_min, r_max, 0.01)
+    # compute targets
+    results = objective(inputs)
+    # create a line plot of input vs result
+    plt.plot(inputs, results)
+    # draw a vertical line at the optimal input
+    plt.axvline(x=x_optima, ls='--', color='red')
+    # show the plot
+    plt.show()
+    
     #test individual class
-    individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T)
-    individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T)
-    
-    
+    individual1 = Individual(INIT_DEPTH, InitType.FULL, NT, T, inputs, results)
+    individual2 = Individual(INIT_DEPTH, InitType.GROWTH, NT, T, inputs, results)
     
     #test GP
     treeGP = GP(
@@ -619,8 +663,12 @@ if __name__ == '__main__':
         initDepth=INIT_DEPTH,
         NT=NT,
         T=T,
-        xrate=XRATE
+        xrate=XRATE,
+        x=inputs,
+        y=results
     )
+    
+    
     
     for _ in range(GENERATIONS_PER_RUN):
     
