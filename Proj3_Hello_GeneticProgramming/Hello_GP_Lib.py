@@ -12,15 +12,22 @@ import sklearn.model_selection as sms
 
 def IF(ops):
     conditional, trueRslt, falseRslt = ops[0], ops[1], ops[2]
+    
+    #print(f"if({conditional}) then {trueRslt} else {falseRslt}")
+    
     if conditional:
         return trueRslt
     else:
         return falseRslt
  
 def SUBTRACT(ops):
+    #print(f"{ops[0]} - {ops[1]}")
+    
     return reduce(OPER.sub, ops)
 
 def MULTIPLY(ops):
+    #print(f"{ops[0]} * {ops[1]}")
+    
     return reduce(OPER.mul, ops)
     
 def DIVIDE(ops):
@@ -32,6 +39,8 @@ def DIVIDE(ops):
     Returns:
         _type_: _description_
     """
+    
+    #print(f"{ops[0]} / {ops[1]}")
     
     if( ops[1] == 0):
         return 0
@@ -592,7 +601,7 @@ class GP():
         
         plt.rcParams.update({'font.size': 22})
         plt.title('Generational Fitness Data')
-        plt.plot(t, self.worstFitness, label='Worst Fitness') 
+        #plt.plot(t, self.worstFitness, label='Worst Fitness') 
         plt.plot(t, self.avgFitness, label='Average Fitness') 
         plt.plot(t, self.bestFitness, label='Best Fitness') 
         plt.grid() 
@@ -650,6 +659,9 @@ class GP():
         #sel best individual
         bestIndividual = self.GetBestFitIndividual()
         
+        print("Best Individual:")
+        print(anytree.RenderTree(bestIndividual.root))
+        
         for i in range(inputCount):
             bestIndividual.EvaluateFitnessRecursively(bestIndividual.root, x[i])
             
@@ -676,7 +688,7 @@ class GP():
         assert len(y_pred) == len(y)
         
         #t = np.arange(0, inputCount)
-            
+        
         plt.rcParams.update({'font.size': 22})
         plt.plot(x, y_pred, label='Predictions') 
         plt.plot(x, y, label='Targets') 
@@ -688,6 +700,7 @@ class GP():
         # draw a vertical line at the optimal input
         plt.axvline(x=training_bounds[0], ls='--', color='red')
         plt.axvline(x=training_bounds[1], ls='--', color='red')
+        plt.text(training_bounds[0] + 0.1, 5,'training range') #(training_bounds[1] - training_bounds[0])/2
         plt.show()
     
     def __str__(self):
@@ -713,15 +726,8 @@ if __name__ == '__main__':
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     GENERATIONS_PER_RUN = 300  
-    TRAIT_CHANGE_PERCENTAGE = 3
     PAIRS_OF_PARENTS_SAVED_FOR_ELITISM = 1
-    NUMBER_OF_ISLANDS = 5
-    MIGRATION_INTERVAL = 5
-    PAIRS_OF_IMMIGRANTS = 3
-    MAX_CHILDREN_KILLED = 10
     CROWDING_DIST_THRESH = 1
-    CROWDING_NICHES = 30
-    FITNESS_SHARING_RANGE = 1
     XRATE = 0.95
     INIT_DEPTH = 4
     
@@ -798,18 +804,15 @@ if __name__ == '__main__':
     gp.PlotGenerationalFitness()
     gp.PlotGenerationalNodeCount()
     
-    #compare to validation set within bounds    
-    #gp.Test(x_validation, y_validation)
-    
     #test using data outside of input range
     # define range for input
     r_min, r_max = -1, 5
     # sample input range uniformly at increments
-    x_test_outside = np.arange(r_min, r_max, 0.001)
+    x_test = np.arange(r_min, r_max, 0.001)
     # compute targets
-    y_test_outside = objective(x_test_outside)
+    y_test = objective(x_test)
     #compare to test set outside of bounds
-    gp.Test(x_test_outside, y_test_outside, training_bounds = (strt, stp))
+    gp.Test(x_test, y_test, training_bounds = (strt, stp))
     
     
     # define range for input
@@ -824,6 +827,5 @@ if __name__ == '__main__':
     plt.plot(inputs, results)
     # draw a vertical line at the optimal input
     plt.axvline(x=x_optima, ls='--', color='red')
-    
     # show the plot
     plt.show()
