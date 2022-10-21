@@ -112,7 +112,7 @@ class Individual():
         #if applying pressure and enough nodes to apply fitness mod
         if applyParsimonyPressure and nodeCount > self.softCapNodeMax:
             #incr fitness by every additional node over the max
-            fitness = fitness + fitness * (nodeCount - self.softCapNodeMax)
+            fitness = fitness * (nodeCount / self.softCapNodeMax)
             
         self.fitness = fitness
        
@@ -605,7 +605,7 @@ class GP():
         
         fitnessIndex = 0
         
-        for fitnessData in (self.bestFitness, self.avgFitness, self.worstFitness):
+        for fitnessData in (self.worstFitness, self.avgFitness, self.bestFitness):
             yAnnotatePosition = worstWorstFitness - worstWorstFitness * fitnessIndex / 12
             
             fitnessIndex += 1
@@ -646,11 +646,9 @@ class GP():
                 
                 y_pred[j][i] = self.population[j].root.value
         """
-        #order pop by fitness 
-        self.OrderPopulationByFitness()
         
         #sel best individual
-        bestIndividual = self.population[0]
+        bestIndividual = self.GetBestFitIndividual()
         
         for i in range(inputCount):
             bestIndividual.EvaluateFitnessRecursively(bestIndividual.root, x[i])
@@ -659,18 +657,19 @@ class GP():
             
         return y_pred
         
-    def Test(self, x, y):
+    def Test(self, x, y, training_bounds: tuple):
         
         inputCount = len(x)
         
         assert inputCount == len(y)
         
-        for i in range(self.populationSize):
-            self.population[i].EvaluateFitness(x, y)
+        #for i in range(self.populationSize): #why re-eval fitness for new data??
+        #    self.population[i].EvaluateFitness(x, y)
             
-        bestFitness = self.GetBestFitness()
+        bestFitIndividual = self.GetBestFitIndividual()
         
-        print(f"Best fit individual = {bestFitness}")
+        print("Best fit individual:")
+        print(anytree.RenderTree(bestFitIndividual.root))
         
         y_pred = self.Predict(x)
         
@@ -686,6 +685,9 @@ class GP():
         plt.title('Predictions vs Targets')
         plt.ylabel('y')
         plt.xlabel('x')
+        # draw a vertical line at the optimal input
+        plt.axvline(x=training_bounds[0], ls='--', color='red')
+        plt.axvline(x=training_bounds[1], ls='--', color='red')
         plt.show()
     
     def __str__(self):
@@ -720,7 +722,7 @@ if __name__ == '__main__':
     CROWDING_DIST_THRESH = 1
     CROWDING_NICHES = 30
     FITNESS_SHARING_RANGE = 1
-    XRATE = 0.8
+    XRATE = 0.95
     INIT_DEPTH = 4
     
     """
@@ -752,11 +754,11 @@ if __name__ == '__main__':
     """
     
     # define range for input
-    r_min, r_max = 0.0, 1.2
+    strt, stp = 0.0, 1.2
     # define optimal input value
     x_optima = 0.96609
     # sample input range uniformly at 0.01 increments
-    inputs = np.arange(r_min, r_max, 0.01)
+    inputs = np.arange(strt, stp, 0.01)
     # compute targets
     results = objective(inputs)
     
@@ -782,8 +784,8 @@ if __name__ == '__main__':
     )
     
     #validation data # sample input range uniformly at 0.01 increments
-    x_validation = np.arange(0.9, r_max, 0.001)
-    y_validation = objective(x_validation)
+    #x_validation = np.arange(0.9, r_max, 0.001)
+    #y_validation = objective(x_validation)
     
     start_time = time.time()
     
@@ -797,17 +799,17 @@ if __name__ == '__main__':
     gp.PlotGenerationalNodeCount()
     
     #compare to validation set within bounds    
-    gp.Test(x_validation, y_validation)
+    #gp.Test(x_validation, y_validation)
     
     #test using data outside of input range
     # define range for input
-    r_min, r_max = 1.3, 5
-    # sample input range uniformly at 0.01 increments
-    x_test_outside = np.arange(r_min, r_max, 0.01)
+    r_min, r_max = -1, 5
+    # sample input range uniformly at increments
+    x_test_outside = np.arange(r_min, r_max, 0.001)
     # compute targets
     y_test_outside = objective(x_test_outside)
     #compare to test set outside of bounds
-    gp.Test(x_test_outside, y_test_outside)
+    gp.Test(x_test_outside, y_test_outside, training_bounds = (strt, stp))
     
     
     # define range for input
