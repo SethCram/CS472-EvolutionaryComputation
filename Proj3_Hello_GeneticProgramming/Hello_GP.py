@@ -147,44 +147,7 @@ class Individual():
                 ops.append(child.value)
         
         #evaluate parent using children values
-        parent.value = parent.operator.funct(ops)
-       
-    def EvaluateFitnessIteratively(self):
-        """
-        Evaluates the individual's tree.
-        """
-        
-        tree_size = len(self.tree)
-        
-        #walk thru every node in tree
-        for i in range(1, tree_size+1):
-            #start walking up tree from bot
-            currNode = self.tree[-i]
-            
-            operands = []
-            
-            #if T or NT that's already been eval'd
-            if (currNode.type == NodeType.TERMINAL or 
-                (currNode.type == NodeType.NONTERMINAL and currNode.evaluated == True)):
-                #walk thru children parent of curr node
-                for parentsChild in currNode.parent.children:
-                    #if parentsChild = T
-                    if( parentsChild.type == NodeType.TERMINAL ):
-                        operands.append(parentsChild.operand)
-                    #if parentsChild = NT and eval'd
-                    elif( parentsChild.type == NodeType.NONTERMINAL and currNode.evaluated == True ):
-                        operands.append(parentsChild.result)
-                
-                if currNode.parent.operator.arity == len(operands):
-                    currNode.parent.result = currNode.parent.operator.funct(operands)
-                    currNode.parent.evaluated = True
-        
-        #make sure tree been eval'd
-        assert self.tree[0].evaluated == True    
-        
-        return self.tree[0].result
-        
-        #return (x**2 + y - 11)**2 + (x + y**2 -7)**2
+        parent.value = float( parent.operator.funct(ops) )
        
     def CreateTreeRecursively(self, parent: anytree.Node) -> None:
             #every parent is a NT
@@ -208,90 +171,7 @@ class Individual():
                             self.CreateTreeRecursively( self.CreateNodeNT(nodeName, parent) )
                         else:
                             self.CreateNodeT(nodeName, parent)
-       
-    def CreateTreeIteratively(self) -> list:
-        """Adds a root non-terminal by default.
-
-        Args:
-            initType (InitType): _description_
-
-        Returns:
-            list: Tree nodes
-        """
-        nodes = []
-        childrenNodes = []
-        layerNodes = []
-        
-        layerNodes.append( 
-            self.CreateNodeNT("0", parent=None)
-        )
-        
-        #walk thru each horizontal layer of tree, starting at depth 1 of root
-        for currDepth in range(1, self.initDepth):
-            
-            #walk thru this layer's nodes
-            for i in range(len(layerNodes)):
-                #if layer node is a NT 
-                if layerNodes[i].type == NodeType.NONTERMINAL: #hasattr(layerNodes[i], "operator"):
-                    #for every member of its arity
-                    for j in range(layerNodes[i].operator.arity):
-                        #roll for the chance to create a NT or T node?
-                        
-                        #uniquely name node
-                        #nodeName = f"depth: {currDepth+1}, parent: {i}, child: {j}"
-                        nodeName = currDepth + i + j
-                        nodeName = str(nodeName)
-                        
-                        #if layer right before last layer, so creating last layer
-                        if currDepth == self.initDepth - 1:
-                            #create a T child node
-                            childrenNodes.append( 
-                                self.CreateNodeT(nodeName, layerNodes[i]) #specify parent as curr layer node
-                            )
-                        #if not creating last layer
-                        else:
-                            if self.initType == InitType.FULL:
-                                #create a NT child node
-                                childrenNodes.append( 
-                                    self.CreateNodeNT(nodeName, layerNodes[i])
-                                )
-                            elif self.initType == InitType.GROWTH:
-                                #roll a 50/50 on whether child is T or NT
-                                if np.random.randint(0,2) == 0:
-                                    #create a NT child node
-                                    childrenNodes.append( 
-                                        self.CreateNodeNT(nodeName, layerNodes[i])
-                                    )
-                                else:
-                                    #create a T child node
-                                    childrenNodes.append( 
-                                        self.CreateNodeT(nodeName, layerNodes[i])
-                                    )
-            #add layer nodes to overall nodes before overwrite
-            nodes = copy.deepcopy(nodes) + copy.deepcopy(layerNodes) #+ copy.deepcopy(childrenNodes)
-            #update layer nodes to newly created children nodes
-            layerNodes = []
-            layerNodes = copy.deepcopy(childrenNodes)
-            #reset children nodes
-            childrenNodes = []
-        
-        #copy over the last layer's nodes too
-        #nodes = nodes + copy.deepcopy(layerNodes)
-        
-        #for pre, fill, node in anytree.RenderTree(nodes[0]):
-        #    if hasattr(node, "operator"):
-        #        print("%s%s %s %s" % (pre, node.name, fill, node.operator.funct))
-        #    if hasattr(node, "operand"):
-        #        print("%s%s %s %s" % (pre, node.name, fill, node.operand))
-        #print(anytree.RenderTree(nodes[0], style=anytree.AsciiStyle(), maxlevel=4))
-        #for node in nodes:
-        #    print(anytree.RenderTree(node))
-        #print(anytree.RenderTree(nodes[0]))
-        #print(f"Node count: {len(nodes)}")
-        
-        #return nodes
-        return nodes[0]
-       
+              
     def CreateNodeNT(self, nodeName, parent) -> anytree.Node:
         #create a NT child node
         return anytree.Node(nodeName, 
@@ -601,7 +481,7 @@ class GP():
         
         plt.rcParams.update({'font.size': 22})
         plt.title('Generational Fitness Data')
-        #plt.plot(t, self.worstFitness, label='Worst Fitness') 
+        plt.plot(t, self.worstFitness, label='Worst Fitness') 
         plt.plot(t, self.avgFitness, label='Average Fitness') 
         plt.plot(t, self.bestFitness, label='Best Fitness') 
         plt.grid() 
@@ -659,8 +539,8 @@ class GP():
         #sel best individual
         bestIndividual = self.GetBestFitIndividual()
         
-        print("Best Individual:")
-        print(anytree.RenderTree(bestIndividual.root))
+        #print("Best Individual:")
+        #print(anytree.RenderTree(bestIndividual.root))
         
         for i in range(inputCount):
             bestIndividual.EvaluateFitnessRecursively(bestIndividual.root, x[i])
@@ -697,6 +577,7 @@ class GP():
         plt.title('Predictions vs Targets')
         plt.ylabel('y')
         plt.xlabel('x')
+        plt.ylim(-20, 20)
         # draw a vertical line at the optimal input
         plt.axvline(x=training_bounds[0], ls='--', color='red')
         plt.axvline(x=training_bounds[1], ls='--', color='red')
@@ -714,20 +595,18 @@ NT = {
         Operator(funct=np.abs, arity=1),
         Operator(funct=IF, arity=3),
         Operator(funct=np.sin, arity=1),
-        Operator(funct=np.cos, arity=1),
     }
 
 # define optimal input value
 #x_optima = 0.96609
 #construct terminal set
-T = {1.4, 3, 18, 'x'}
+T = {0, 1, 1.4, 3, 18, np.pi, 'x'}
 
 if __name__ == '__main__': 
     POPULATION_SIZE = 100
     INDIVIDUALS_NUMBER_OF_TRAITS = 10
     GENERATIONS_PER_RUN = 300  
     PAIRS_OF_PARENTS_SAVED_FOR_ELITISM = 1
-    CROWDING_DIST_THRESH = 1
     XRATE = 0.95
     INIT_DEPTH = 4
     
@@ -777,32 +656,47 @@ if __name__ == '__main__':
     
     X_train, y_train = inputs, results
     
-    #test GP
-    gp = GP(
-        populationSize=POPULATION_SIZE,
-        initDepth=INIT_DEPTH,
-        NT=NT,
-        T=T,
-        xrate=XRATE,
-        x_train=X_train,
-        y_train=y_train,
-        pairs_of_parents_elitism_saves=PAIRS_OF_PARENTS_SAVED_FOR_ELITISM
-    )
-    
-    #validation data # sample input range uniformly at 0.01 increments
-    #x_validation = np.arange(0.9, r_max, 0.001)
-    #y_validation = objective(x_validation)
-    
     start_time = time.time()
     
-    for _ in range(GENERATIONS_PER_RUN):
+    for i in range(20):
     
-        gp.RunGen()
+        #test GP
+        gp = GP(
+            populationSize=POPULATION_SIZE,
+            initDepth=INIT_DEPTH,
+            NT=NT,
+            T=T,
+            xrate=XRATE,
+            x_train=X_train,
+            y_train=y_train,
+            pairs_of_parents_elitism_saves=PAIRS_OF_PARENTS_SAVED_FOR_ELITISM
+        )
+        
+        #validation data # sample input range uniformly at 0.01 increments
+        #x_validation = np.arange(0.9, r_max, 0.001)
+        #y_validation = objective(x_validation)
+        
+        for _ in range(GENERATIONS_PER_RUN):
+        
+            gp.RunGen()
+
+        #if first GP
+        if( i == 0 ):
+            #make it the best
+            bestFitnessGP = copy.copy( gp.bestFitness[-1] )
+            bestGP = gp
+        #if not first GP
+        else:
+            #if curr gp performs better than prev best
+            if(gp.bestFitness[-1] < bestFitnessGP):
+                #establish new best fitness GP
+                bestFitnessGP = copy.copy( gp.bestFitness[-1] )
+                bestGP = gp
       
     print(f"Runtime took {time.time() - start_time} seconds.")
         
-    gp.PlotGenerationalFitness()
-    gp.PlotGenerationalNodeCount()
+    bestGP.PlotGenerationalFitness()
+    bestGP.PlotGenerationalNodeCount()
     
     #test using data outside of input range
     # define range for input
@@ -812,9 +706,9 @@ if __name__ == '__main__':
     # compute targets
     y_test = objective(x_test)
     #compare to test set outside of bounds
-    gp.Test(x_test, y_test, training_bounds = (strt, stp))
+    bestGP.Test(x_test, y_test, training_bounds = (strt, stp))
     
-    
+    """
     # define range for input
     r_min, r_max = 0.0, 1.2
     # define optimal input value
@@ -829,3 +723,4 @@ if __name__ == '__main__':
     plt.axvline(x=x_optima, ls='--', color='red')
     # show the plot
     plt.show()
+    """
