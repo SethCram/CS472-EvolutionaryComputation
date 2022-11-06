@@ -1,3 +1,10 @@
+#Author: Seth Cram
+#Class: Evolutionary Computation - CS472/CS572
+#Project 2b: Real Valued Vector Rep and Island Models, Fitness Sharing, and Crowding
+#Due Date: ?
+#Instructions:
+# 
+
 import copy
 from enum import Enum
 import random

@@ -657,7 +657,7 @@ def CalcSharedFitness( popFitness: list, individualsIndexInPopFitness: int, shar
     #mult since want lower fitness
     return individualFitness.fitness * fsSum
                 
-
+   
     
 def CreateChildren(populationFitness: numpy.ndarray, functionBounds: tuple) -> numpy.ndarray:
     """Create two children through selecting two parents, crossing them over, and mutating the children.
