@@ -1,0 +1,2 @@
+saved_gas/ filter=lfs diff=lfs merge=lfs -text
+saved_gas/bestGA_72train_58test.pkl filter=lfs diff=lfs merge=lfs -text
